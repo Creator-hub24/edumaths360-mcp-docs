@@ -59,7 +59,7 @@ export default function Home(): ReactNode {
           <p className={styles.subtitle}>
             An open-source <strong>Model Context Protocol</strong> server that generates Class 6–10 practice
             problems, checks answers and gives graduated hints, without handing over the answer. Documented
-            end to end, with every code sample tested in CI.
+            end to end, with the code examples tested in CI.
           </p>
           <div className={styles.buttons}>
             <Link className="button button--primary button--lg" to="/docs/intro">
