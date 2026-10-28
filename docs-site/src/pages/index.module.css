@@ -1,0 +1,73 @@
+.hero {
+  padding: 5rem 0 4rem;
+  background: linear-gradient(135deg, #312e81 0%, #4f46e5 60%, #7c3aed 100%);
+  color: #fff;
+}
+
+.eyebrow {
+  color: #fbbf24;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  font-size: 3rem;
+  max-width: 48rem;
+  color: #fff;
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  max-width: 44rem;
+  opacity: 0.92;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.buttons :global(.button--outline) {
+  color: #fff;
+  border-color: #fff;
+}
+
+.card {
+  display: block;
+  height: 100%;
+  padding: 1.5rem;
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: 12px;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.card:hover {
+  border-color: var(--ifm-color-primary);
+  color: inherit;
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.kind {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ifm-color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.band {
+  padding: 3rem 0;
+  background: var(--ifm-color-emphasis-100);
+}
+
+@media screen and (max-width: 996px) {
+  .title {
+    font-size: 2.2rem;
+  }
+}

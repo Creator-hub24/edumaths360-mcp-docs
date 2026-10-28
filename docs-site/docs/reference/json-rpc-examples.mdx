@@ -1,0 +1,39 @@
+---
+sidebar_position: 4
+title: JSON-RPC examples
+description: Every message of a real session with the server, captured over stdio. Requests, responses, tool errors and protocol errors.
+toc_max_heading_level: 3
+---
+
+import JsonRpcExchanges from '@site/src/components/JsonRpcExchanges';
+
+# JSON-RPC examples
+
+MCP messages are [JSON-RPC 2.0](https://www.jsonrpc.org/specification) objects. On the stdio transport, each message is one line of JSON. This page shows a complete session with the Edumaths360 server, from the handshake to two protocol errors.
+
+:::info Real payloads, not hand-written ones
+These messages were captured from the running server by [`snippets/capture_payloads.py`](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/snippets/capture_payloads.py) and saved to [`snippets/example_payloads.json`](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/snippets/example_payloads.json). This page reads that file at build time, so it cannot drift from the captured data. To refresh it after changing the server, run `python snippets/capture_payloads.py`.
+:::
+
+## Reading the messages
+
+- A **request** has an `id`, a `method` and usually `params`. The response carries the same `id`.
+- A **notification** has no `id` and gets no response.
+- A response has **either** a `result` **or** an `error`, never both.
+- A tool failure is a `result` with `"isError": true` (example 8). A protocol failure is an `error` (examples 14 and 15).
+
+The capture script uses the `initialize` handshake with protocol version `2025-11-25`, which is what most hosts send today. The MCP Python SDK 2.x client negotiates the newer `2026-07-28` version automatically, but the tool, resource and prompt messages look the same.
+
+The **Python SDK** tab shows the equivalent call with the SDK client from [Connect from a Python client](../how-to/python-client.mdx).
+
+## The session
+
+<JsonRpcExchanges />
+
+## Error codes used by this server
+
+| Code | Meaning | Example |
+| --- | --- | --- |
+| `-32601` | Method not found | Example 15 |
+| `-32602` | Invalid params: unknown resource, or invalid prompt arguments | Example 14 |
+| `isError: true` | Not a JSON-RPC error: the tool ran and reported a problem | Example 8 |

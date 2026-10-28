@@ -1,0 +1,11 @@
+extends: existence
+message: "Avoid '%s': what is easy for you may not be easy for the reader."
+level: warning
+ignorecase: true
+tokens:
+  - simply
+  - obviously
+  - of course
+  - clearly
+  - trivially
+  - everyone knows

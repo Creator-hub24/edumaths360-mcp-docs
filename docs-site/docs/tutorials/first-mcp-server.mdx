@@ -1,0 +1,247 @@
+---
+sidebar_position: 1
+title: Build your first MCP server in 10 minutes
+description: Write, run and test a tiny MCP server with one tool and one resource, using the official Python SDK.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeBlock from '@theme/CodeBlock';
+import TimesTableServer from '!!raw-loader!@site/../snippets/tutorial/times_table_server.py';
+
+# Build your first MCP server in 10 minutes
+
+In this tutorial you will build a small MCP server that gives an AI assistant one new ability: printing a multiplication table. You will then call it with the MCP Inspector, exactly as an AI app would.
+
+By the end you will know the three building blocks every MCP server uses: a **server object**, a **tool**, and a **resource**.
+
+**Time:** about 10 minutes. **Level:** beginner. You should be comfortable running commands in a terminal and reading basic Python.
+
+## What you need
+
+- **Python 3.10 or later.** Check with `python3 --version`.
+- **Node.js 22 or later**, only for the MCP Inspector in step 4. Check with `node --version`.
+- Optionally, **[uv](https://docs.astral.sh/uv/)**, a fast Python package manager. The steps show both uv and pip.
+
+## Step 1: Create a project
+
+Create a folder and install the MCP Python SDK (software development kit) into it.
+
+<Tabs groupId="python-installer">
+  <TabItem value="uv" label="uv" default>
+
+```bash
+uv init --bare times-table
+cd times-table
+uv add "mcp>=2.3,<3"
+```
+
+  </TabItem>
+  <TabItem value="pip" label="pip (macOS / Linux)">
+
+```bash
+mkdir times-table && cd times-table
+python3 -m venv .venv
+source .venv/bin/activate
+pip install "mcp>=2.3,<3"
+```
+
+  </TabItem>
+  <TabItem value="pip-windows" label="pip (Windows)">
+
+```powershell
+mkdir times-table; cd times-table
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install "mcp>=2.3,<3"
+```
+
+  </TabItem>
+</Tabs>
+
+:::note SDK version
+This tutorial uses version 2 of the MCP Python SDK. In version 2 the high-level server class is called `MCPServer`. Older tutorials call it `FastMCP` and import it from `mcp.server.fastmcp`; that import fails on version 2. See [Troubleshooting](../troubleshooting.md#modulenotfounderror-no-module-named-mcpserverfastmcp).
+:::
+
+## Step 2: Write the server
+
+Create a file called `server.py` and paste in this code:
+
+<CodeBlock language="python" title="server.py" showLineNumbers>{TimesTableServer}</CodeBlock>
+
+Here is what each part does:
+
+1. **`MCPServer(name="times-table")`** creates the server. The name is what AI apps display.
+2. **`@mcp.tool(...)`** turns a normal Python function into an MCP *tool*: an action the AI can choose to call. The SDK reads the type hints and builds a JSON Schema from them, so the AI knows that `number` must be a whole number from 1 to 20.
+3. **`Field(ge=1, le=20, ...)`** adds limits. If the AI sends `number=50`, the SDK rejects the call before your function runs. This is free input validation.
+4. **`@mcp.resource("tables://about")`** exposes read-only data at a URI. Resources are for context the AI can read, not actions it can take.
+5. **`mcp.run(transport="stdio")`** starts the server. *stdio* means the server talks through standard input and output, so the AI app launches it as a child process.
+
+:::warning Never print to stdout in a stdio server
+With the stdio transport, **stdout carries the protocol messages**. A stray `print()` corrupts the stream. That is why the example sends logs to `sys.stderr`. See [Troubleshooting](../troubleshooting.md#failed-to-parse-jsonrpc-message-from-server) for the error you get if you forget.
+:::
+
+## Step 3: Start the server
+
+<Tabs groupId="python-installer">
+  <TabItem value="uv" label="uv" default>
+
+```bash
+uv run server.py
+```
+
+  </TabItem>
+  <TabItem value="pip" label="pip (macOS / Linux)">
+
+```bash
+python server.py
+```
+
+  </TabItem>
+  <TabItem value="pip-windows" label="pip (Windows)">
+
+```powershell
+python server.py
+```
+
+  </TabItem>
+</Tabs>
+
+Nothing seems to happen, and that is correct. The server is waiting for JSON-RPC messages on standard input. Press **Ctrl+C** to stop it. In practice, you never start a stdio server by hand: the AI app or the Inspector starts it for you.
+
+## Step 4: Call your tool with the MCP Inspector
+
+The [MCP Inspector](https://github.com/modelcontextprotocol/inspector) is the official debugging client. Its command-line mode starts your server, sends one request and prints the response.
+
+List the tools the server offers:
+
+```bash
+npx @modelcontextprotocol/inspector --cli uv run server.py --method tools/list
+```
+
+(If you used pip, replace `uv run server.py` with `.venv/bin/python server.py`, or `.venv\Scripts\python server.py` on Windows.)
+
+The response describes your tool, including the JSON Schema the SDK generated from your type hints:
+
+```json
+{
+  "tools": [
+    {
+      "name": "times_table",
+      "description": "Return the multiplication table for a number.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "description": "The table to print, 1 to 20.",
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Number",
+            "type": "integer"
+          },
+          "up_to": {
+            "default": 10,
+            "description": "Last multiplier.",
+            "maximum": 20,
+            "minimum": 1,
+            "title": "Up To",
+            "type": "integer"
+          }
+        },
+        "required": ["number"],
+        "title": "times_tableArguments"
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "result": {"items": {"type": "string"}, "title": "Result", "type": "array"}
+        },
+        "required": ["result"],
+        "title": "times_tableOutput"
+      }
+    }
+  ]
+}
+```
+
+Now call the tool:
+
+```bash
+npx @modelcontextprotocol/inspector --cli uv run server.py \
+  --method tools/call --tool-name times_table --tool-arg number=7 --tool-arg up_to=3
+```
+
+```json
+{
+  "content": [
+    {"type": "text", "text": "7 × 1 = 7"},
+    {"type": "text", "text": "7 × 2 = 14"},
+    {"type": "text", "text": "7 × 3 = 21"}
+  ],
+  "structuredContent": {
+    "result": ["7 × 1 = 7", "7 × 2 = 14", "7 × 3 = 21"]
+  },
+  "isError": false
+}
+```
+
+The result has two forms. `content` is text that the AI model reads. `structuredContent` is machine-readable JSON that matches the `outputSchema`.
+
+## Step 5: See validation in action
+
+Send a value outside the allowed range:
+
+```bash
+npx @modelcontextprotocol/inspector --cli uv run server.py \
+  --method tools/call --tool-name times_table --tool-arg number=50
+```
+
+```json
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Error executing tool times_table: 1 validation error for times_tableArguments\nnumber\n  Input should be less than or equal to 20 [type=less_than_equal, input_value=50, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/less_than_equal"
+    }
+  ],
+  "isError": true
+}
+```
+
+Your function never ran. The error comes back as a normal result with `"isError": true`, so the AI can read it and try again with a valid number.
+
+## Step 6: Read the resource
+
+```bash
+npx @modelcontextprotocol/inspector --cli uv run server.py \
+  --method resources/read --uri tables://about
+```
+
+```json
+{
+  "contents": [
+    {
+      "uri": "tables://about",
+      "mimeType": "text/plain",
+      "text": "Times tables from 1 to 20. Call the times_table tool with a number."
+    }
+  ]
+}
+```
+
+## What you learned
+
+- An MCP server is a normal program. The SDK handles the protocol; you write plain functions.
+- **Tools** are actions. **Resources** are read-only data. (The third building block, **prompts**, is covered in the [reference](../reference/resources-and-prompts.md#socratic_tutor).)
+- Type hints become JSON Schemas, which give you input validation for free.
+- With stdio, stdout belongs to the protocol. Log to stderr.
+
+## Next steps
+
+- [Connect a server to Claude Desktop](./connect-claude-desktop.mdx) and use it in a real conversation.
+- Read the [Edumaths360 server source](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/server/src/edumaths360_mcp/server.py) to see the same ideas in a fuller server.
+- Learn [how MCP works](../explanation/how-mcp-works.md) under the hood.
+
+:::info This code is tested
+The code on this page is loaded at build time from [`snippets/tutorial/times_table_server.py`](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/snippets/tutorial/times_table_server.py), and `server/tests/test_snippets.py` runs it in CI. If the code changes, this page changes with it.
+:::

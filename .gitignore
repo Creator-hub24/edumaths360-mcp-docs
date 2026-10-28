@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node / Docusaurus
+node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+.cache-loader/
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.log

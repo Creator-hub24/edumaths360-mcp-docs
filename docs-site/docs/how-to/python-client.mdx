@@ -1,0 +1,112 @@
+---
+sidebar_position: 2
+title: Connect from a Python client
+description: Launch the server from Python, call its tools, read resources and handle errors with the MCP Python SDK client.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import CodeBlock from '@theme/CodeBlock';
+import ClientPy from '!!raw-loader!@site/../snippets/client.py';
+
+# Connect from a Python client
+
+You do not need an AI app to use an MCP server. This guide shows how to call the Edumaths360 server from your own Python code, for example in a test, a script or a backend service.
+
+**Before you start:** run `uv sync --extra dev` in `server/`.
+
+## The complete client
+
+[`snippets/client.py`](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/snippets/client.py) runs one full practice round:
+
+<CodeBlock language="python" title="snippets/client.py" showLineNumbers>{ClientPy}</CodeBlock>
+
+Run it from the repository root:
+
+<Tabs groupId="python-installer">
+  <TabItem value="uv" label="uv" default>
+
+```bash
+cd server
+uv run python ../snippets/client.py
+```
+
+  </TabItem>
+  <TabItem value="pip" label="pip">
+
+```bash
+pip install -e "server[dev]"
+python snippets/client.py
+```
+
+  </TabItem>
+</Tabs>
+
+### Expected output
+
+```text
+Connected to Edumaths360 Practice Server v0.1.0 (protocol 2026-07-28)
+
+Tools: generate_problem, check_answer, get_hint
+
+Problem lin-g8-medium-42: Solve for x: 7x + 7 = 105
+Attempt 'x = -14' -> Check your signs: you have the right size of number but the wrong sign.
+Hint 1: Undo the operations in reverse order: deal with the number added or subtracted first, then the multiplication.
+Hint 2: Subtract 7 from both sides. You should get 7x = 98.
+Attempt '14' -> Correct! Well done. | Solution: 7x + 7 = 105  →  7x = 98  →  x = 98 ÷ 7 = 14
+
+Error example -> True Error executing tool generate_problem: 'quadratics' is not offered for Class 7. Topics for Class 7: linear_equations, fractions, percentages.
+Class 9 topics: linear_equations, percentages, quadratics
+Prompt starts: You are a patient maths tutor for a Class 7 student practising fractions.
+```
+
+The problem is the same every time because the client passes `seed=42`. The server also writes log lines to stderr; they are not shown here.
+
+## Key points
+
+### Launching the server
+
+`StdioServerParameters(command=..., args=[...])` tells the client how to start the server as a subprocess. The client owns the process: it starts when you enter `async with Client(...)` and stops when the block ends.
+
+### Reading results
+
+Every `call_tool` result has:
+
+| Attribute | Contains |
+| --- | --- |
+| `structured_content` | The JSON object that matches the tool's `outputSchema`. Use this in code. |
+| `content` | A list of content blocks (usually text) intended for the AI model. |
+| `is_error` | `True` when the tool reported an error, such as invalid input. |
+
+### Two kinds of error
+
+1. **Tool errors** come back as a normal result with `is_error=True`, as in step 5 of the client. Bad arguments and "topic not offered" errors work this way, so a model can read the message and correct itself.
+2. **Protocol errors** raise an `MCPError` exception in the client. For example, reading `syllabus://grade/12` fails with JSON-RPC error code `-32602`. See the [error reference](../reference/tools.md#errors).
+
+```python
+from mcp import MCPError
+
+try:
+    await client.read_resource("syllabus://grade/12")
+except MCPError as exc:
+    print(exc.error.code, exc.error.message)
+    # -32602 No syllabus for grade '12'. Use a grade from 6 to 10.
+```
+
+### Testing in-process
+
+For unit tests you can skip the subprocess and pass the server object straight to the client. The test suite does this in `server/tests/test_server.py`:
+
+```python
+from mcp import Client
+from edumaths360_mcp.server import mcp
+
+async with Client(mcp) as client:
+    result = await client.call_tool("generate_problem", {"topic": "fractions", "grade": 7})
+```
+
+This runs the full MCP message exchange in memory, which is fast and needs no process management.
+
+### Protocol version
+
+The SDK client negotiates the newest protocol version both sides support. With SDK 2.x on both sides, that is `2026-07-28`, as the first line of the output shows. Hosts that use the older `initialize` handshake get `2025-11-25`, as shown in the [JSON-RPC examples](../reference/json-rpc-examples.mdx).

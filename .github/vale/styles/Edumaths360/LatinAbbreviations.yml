@@ -1,0 +1,10 @@
+extends: substitution
+message: "Use '%s' instead of '%s' (plain English helps readers of English as a second language)."
+level: warning
+ignorecase: true
+nonword: true
+swap:
+  '\be\.g\.': for example
+  '\bi\.e\.': that is
+  '\betc\.': and so on
+  '\bvia\b': through

@@ -1,0 +1,161 @@
+---
+sidebar_position: 2
+title: Connect the server to Claude Desktop
+description: Install the Edumaths360 Practice Server, register it in Claude Desktop, and run a tutoring session.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import VideoPlaceholder from '@site/src/components/VideoPlaceholder';
+
+# Connect the server to Claude Desktop
+
+In this tutorial you will install the Edumaths360 Practice Server on your computer and connect it to [Claude Desktop](https://claude.ai/download). You will then run a short practice session where Claude asks questions instead of giving answers.
+
+**Time:** about 10 minutes. **Level:** beginner.
+
+## What you need
+
+- **Claude Desktop** for macOS or Windows.
+- **Python 3.10 or later** and **[uv](https://docs.astral.sh/uv/)**.
+- **Git**, to download the code.
+
+## Step 1: Download and test the server
+
+```bash
+git clone https://github.com/Creator-hub24/edumaths360-mcp-docs.git
+cd edumaths360-mcp-docs/server
+uv sync --extra dev
+uv run pytest -q
+```
+
+All tests should pass. The last line of the output reports how many passed.
+
+Now find the **absolute path** of the `server` folder. You will need it in step 3.
+
+<Tabs groupId="os">
+  <TabItem value="mac" label="macOS" default>
+
+```bash
+pwd
+# Example output: /Users/you/edumaths360-mcp-docs/server
+```
+
+  </TabItem>
+  <TabItem value="win" label="Windows">
+
+```powershell
+(Get-Location).Path
+# Example output: C:\Users\you\edumaths360-mcp-docs\server
+```
+
+  </TabItem>
+</Tabs>
+
+## Step 2: Open the Claude Desktop configuration file
+
+In Claude Desktop, open **Settings → Developer → Edit Config**. This opens (and creates, if needed) the configuration file:
+
+<Tabs groupId="os">
+  <TabItem value="mac" label="macOS" default>
+
+```text
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+  </TabItem>
+  <TabItem value="win" label="Windows">
+
+```text
+%APPDATA%\Claude\claude_desktop_config.json
+```
+
+  </TabItem>
+</Tabs>
+
+## Step 3: Register the server
+
+Add an `edumaths360` entry under `mcpServers`. Replace the path with the one you found in step 1.
+
+<Tabs groupId="os">
+  <TabItem value="mac" label="macOS" default>
+
+```json title="claude_desktop_config.json"
+{
+  "mcpServers": {
+    "edumaths360": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/Users/you/edumaths360-mcp-docs/server",
+        "run",
+        "edumaths360-mcp"
+      ]
+    }
+  }
+}
+```
+
+  </TabItem>
+  <TabItem value="win" label="Windows">
+
+```json title="claude_desktop_config.json"
+{
+  "mcpServers": {
+    "edumaths360": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\\Users\\you\\edumaths360-mcp-docs\\server",
+        "run",
+        "edumaths360-mcp"
+      ]
+    }
+  }
+}
+```
+
+  </TabItem>
+</Tabs>
+
+What this means:
+
+- **`command`** and **`args`** are the command Claude Desktop runs to start the server. Here, `uv --directory <path> run edumaths360-mcp` starts the server from the project's own virtual environment.
+- **`edumaths360-mcp`** is the console command defined in `server/pyproject.toml` under `[project.scripts]`.
+- Claude Desktop starts the server as a child process and talks to it over **stdio**.
+
+:::tip If Claude Desktop cannot find `uv`
+Desktop apps do not always see the same `PATH` as your terminal. If the server does not start, replace `"uv"` with the full path from `which uv` (macOS) or `where.exe uv` (Windows).
+:::
+
+If the file already has other servers, add `edumaths360` next to them inside the same `mcpServers` object. JSON does not allow trailing commas, so check the commas carefully.
+
+## Step 4: Restart Claude Desktop
+
+Quit Claude Desktop completely and open it again. Configuration is read only at start-up.
+
+Open **Settings → Developer**. You should see **edumaths360** in the list with a running status. In a chat, the tools menu should list `generate_problem`, `check_answer` and `get_hint`.
+
+## Step 5: Run a practice session
+
+Try one of these:
+
+1. **Use the prompt.** Claude Desktop lists MCP prompts in the chat input's "+" (attach) menu. Pick **Socratic maths tutor** from the edumaths360 server and enter a topic such as `fractions` and grade `7`. Menu names can change between Claude Desktop versions.
+2. **Just ask.** Type: *"I'm in Class 8. Give me a medium linear equation to practise, and don't tell me the answer."*
+
+Claude calls `generate_problem` and shows you the question. Answer it with a deliberate mistake, for example the right number with the wrong sign. Claude calls `check_answer`, and the server replies with targeted feedback ("Check your signs…") instead of the correct answer. Ask for a hint and Claude calls `get_hint` at level 1.
+
+Claude Desktop asks for your permission before it calls a tool. This is the **human-in-the-loop** control described in the [security model](../explanation/security-model.md#4-human-in-the-loop).
+
+<VideoPlaceholder />
+
+## If something goes wrong
+
+- Check the server's log file. Claude Desktop writes one log per server: `~/Library/Logs/Claude/mcp-server-edumaths360.log` on macOS, or `%APPDATA%\Claude\logs\` on Windows. The server writes its log lines to stderr, so they appear there.
+- Run the server with the [MCP Inspector](../how-to/debug-with-inspector.md) to rule out Claude Desktop.
+- See [Troubleshooting](../troubleshooting.md).
+
+## Next steps
+
+- [Configure Cursor as well](../how-to/configure-hosts.mdx).
+- See exactly what Claude sends and receives in the [JSON-RPC examples](../reference/json-rpc-examples.mdx).

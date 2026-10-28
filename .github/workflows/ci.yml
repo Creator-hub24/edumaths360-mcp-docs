@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  server:
+    name: Server tests (pytest + ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v10.3.3
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        working-directory: server
+        run: uv sync --extra dev --locked
+
+      - name: Lint and format check
+        run: |
+          uvx ruff check .
+          uvx ruff format --check .
+
+      - name: Run tests (server, docs snippets, stdio)
+        working-directory: server
+        run: uv run pytest -q
+
+  docs:
+    name: Docs build (broken links fail)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs-site
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Build (onBrokenLinks and onBrokenAnchors are set to 'throw')
+        run: npm run build
+
+  prose:
+    name: Prose lint (Vale, non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    env:
+      VALE_VERSION: 3.25.1
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Vale
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "v${VALE_VERSION}" -R errata-ai/vale -p "vale_${VALE_VERSION}_Linux_64-bit.tar.gz" -D /tmp
+          tar -xzf "/tmp/vale_${VALE_VERSION}_Linux_64-bit.tar.gz" -C /tmp vale
+          /tmp/vale --version
+
+      - name: Lint docs and Markdown files
+        run: /tmp/vale --output=line docs-site/docs README.md CONTRIBUTING.md STYLE_GUIDE.md

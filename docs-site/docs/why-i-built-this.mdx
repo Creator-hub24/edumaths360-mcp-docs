@@ -1,0 +1,45 @@
+---
+sidebar_position: 99
+title: Why I built this
+description: A note from Vaibhav Gupta on why a maths teacher built an MCP server and documented it this way.
+---
+
+import VideoPlaceholder from '@site/src/components/VideoPlaceholder';
+
+# Why I built this
+
+I'm Vaibhav Gupta. I founded **Edumaths360**, and I teach maths to students in Class 6 to 10. I am moving into developer relations, technical content and solutions engineering, and this project is where those two worlds meet.
+
+## The teaching problem
+
+When students get stuck, the help they need is rarely the answer. It is a question that points them at the next step. Good tutors know this; a general AI chatbot, left to itself, often does not. It solves the problem neatly, and the student learns very little.
+
+When I learned about the Model Context Protocol, I saw a way to put the teaching rules *outside* the model, in code that I control. The server decides when a hint is allowed, what a hint may say, and when the solution can be shown. The model can still explain things in a friendly way, but it works inside rules that come from the classroom. The [hint pedagogy](./explanation/hint-pedagogy.md) page describes those rules in detail.
+
+## Why the documentation matters as much as the code
+
+Developer relations work is mostly about one thing: helping another developer succeed quickly. So I treated the docs as the main product, not an afterthought:
+
+- **Diátaxis structure.** Tutorials, how-to guides, reference and explanation are kept separate, because a beginner learning MCP and an engineer looking up an error code need different pages.
+- **Docs as code.** The docs live in the same repository as the server, are reviewed in pull requests, and are built and checked by CI. A broken link fails the build.
+- **Code that cannot drift.** Code examples are imported from real files that the test suite runs, and the outputs shown are captured from the real server. If the code changes, the docs change with it, or the tests fail.
+- **Real errors only.** The [Troubleshooting](./troubleshooting.md) page lists errors I actually hit, with the messages copied from my terminal. Some came from following older tutorials, which is exactly the experience a new developer has.
+- **Plain English.** Many developers read documentation in their second language. I try to explain each term the first time it appears.
+
+## What I learned
+
+- **The ecosystem moves fast.** Version 2 of the MCP Python SDK renamed `FastMCP` to `MCPServer`, and much of the content online still uses the old name. Pinning versions and testing the docs is not optional.
+- **Descriptions are an interface.** The model chooses tools based on their descriptions and schemas, so writing them is closer to writing documentation than writing comments.
+- **Safety is a design choice.** Keeping the answer on the server and validating every argument was easier to build in from the start than it would have been to add later.
+
+## What this project is, and is not
+
+This is a portfolio project. It is a working, tested MCP server and a full documentation site, built to show how I approach developer education. It is not yet used by Edumaths360 students in production, and I have not measured learning outcomes with it. If I do, I will report the method and results honestly here.
+
+## Watch the walkthrough
+
+<VideoPlaceholder />
+
+## Get in touch
+
+I'd love feedback on the docs, especially from people who are new to MCP. You can [open an issue](https://github.com/Creator-hub24/edumaths360-mcp-docs/issues) or email me at [Edumaths360@gmail.com](mailto:Edumaths360@gmail.com).

@@ -1,0 +1,67 @@
+---
+sidebar_position: 1
+title: Introduction
+description: What the Edumaths360 Practice Server is, who these docs are for, and where to start.
+---
+
+import VideoPlaceholder from '@site/src/components/VideoPlaceholder';
+
+# Introduction
+
+The **Edumaths360 Practice Server** is a small, working [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server. It lets an AI assistant, such as Claude Desktop or Cursor, run maths practice for students in Class 6 to 10 (ages roughly 11 to 16).
+
+The key design rule is simple: **the assistant should help the student think, not think for them.** The server creates problems, marks answers, and gives step-by-step hints, but it never hands over the answer early.
+
+:::tip What is MCP, in one sentence?
+MCP is an open standard that lets an AI application (the *host*) discover and call *tools* in another program (the *server*) through a common JSON-RPC message format. Think of it as a USB-C port for AI apps. Read [How MCP works](./explanation/how-mcp-works.md) for the full picture.
+:::
+
+<VideoPlaceholder />
+
+## What the server offers
+
+| Capability | Name | What it does |
+| --- | --- | --- |
+| Tool | [`generate_problem`](./reference/tools.md#generate_problem) | Creates a problem for a topic, grade and difficulty. Returns the question, never the answer. |
+| Tool | [`check_answer`](./reference/tools.md#check_answer) | Marks an attempt and gives targeted feedback, for example "check your signs". |
+| Tool | [`get_hint`](./reference/tools.md#get_hint) | Gives a hint at level 1, 2 or 3. Hints never state the final answer. |
+| Resource | [`syllabus://topics`](./reference/resources-and-prompts.md#syllabustopics) | Lists every topic and the grades it is offered for. |
+| Resource template | [`syllabus://grade/{grade}`](./reference/resources-and-prompts.md#syllabusgradegrade) | Lists the topics for one grade. |
+| Prompt | [`socratic_tutor`](./reference/resources-and-prompts.md#socratic_tutor) | A ready-made tutoring session that asks guiding questions. |
+
+Topics: **linear equations** (Class 6–10), **fractions** (Class 6–8), **percentages** (Class 6–10) and **quadratic equations** (Class 9–10), each at easy, medium and hard difficulty.
+
+## Who these docs are for
+
+- **Developers** who want to learn MCP by reading a small, complete, tested server.
+- **Teachers and EdTech builders** who want an AI assistant that supports learning instead of replacing it.
+- **Anyone evaluating MCP**, who wants real request and response examples rather than pseudo-code.
+
+## How these docs are organised
+
+The docs follow the [Diátaxis](https://diataxis.fr) framework, which splits documentation by what the reader needs at that moment:
+
+| Section | Use it when you want to… | Start with |
+| --- | --- | --- |
+| **Tutorials** | learn by doing, step by step | [Build your first MCP server](./tutorials/first-mcp-server.mdx) |
+| **How-to guides** | complete a specific task | [Add a new tool](./how-to/add-a-tool.mdx) |
+| **Reference** | look up exact facts: schemas, errors, payloads | [Tools reference](./reference/tools.md) |
+| **Explanation** | understand the design and the reasons behind it | [Architecture](./explanation/architecture.md) |
+
+## Quickstart
+
+You need **Python 3.10 or later** and [uv](https://docs.astral.sh/uv/), a fast Python package manager.
+
+```bash
+git clone https://github.com/Creator-hub24/edumaths360-mcp-docs.git
+cd edumaths360-mcp-docs/server
+uv sync --extra dev          # create .venv and install the server + test tools
+uv run pytest -q             # run the test suite
+uv run python ../snippets/client.py   # watch one full practice round
+```
+
+The last command starts the server, connects a Python client to it, and prints a practice round. The output is shown in [Connect from a Python client](./how-to/python-client.mdx#expected-output).
+
+## Accuracy
+
+Every code sample on this site is copied from a file in the repository, and the CI pipeline runs those files on every change. The JSON-RPC examples were captured from the running server by [`snippets/capture_payloads.py`](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/snippets/capture_payloads.py). The server is built with the official [MCP Python SDK](https://github.com/modelcontextprotocol/python-sdk) version 2.x.

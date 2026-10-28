@@ -1,0 +1,86 @@
+---
+sidebar_position: 1
+title: Add a new tool
+description: Add a tool to the Edumaths360 server with a typed input schema, a structured output, annotations and tests.
+---
+
+import CodeBlock from '@theme/CodeBlock';
+import ExtendServer from '!!raw-loader!@site/../snippets/extend_server.py';
+
+# Add a new tool
+
+This guide shows how to add a tool to the Edumaths360 Practice Server. The example adds **`make_worksheet`**, which returns several problems at once so a teacher can print a worksheet.
+
+**Before you start:** you have cloned the repository and run `uv sync --extra dev` in `server/`. If MCP tools are new to you, do the [first tutorial](../tutorials/first-mcp-server.mdx) first.
+
+## 1. Decide what the tool should and should not do
+
+Write one sentence for each:
+
+- **Does:** returns 1 to 10 problem statements on one topic, with their problem IDs.
+- **Does not:** return answers. The student still uses `check_answer` for each problem.
+- **Side effects:** none. It is read-only and calling it twice with the same input gives the same result.
+
+This decides the tool's description, its annotations and its tests.
+
+## 2. Write the tool
+
+The complete, tested example is in [`snippets/extend_server.py`](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/snippets/extend_server.py). It imports the existing server object and registers one more tool on it:
+
+<CodeBlock language="python" title="snippets/extend_server.py" showLineNumbers>{ExtendServer}</CodeBlock>
+
+To make the tool part of the package instead, put the same function in `server/src/edumaths360_mcp/server.py` next to the other tools.
+
+### Checklist for every tool
+
+| Part | Why it matters | In the example |
+| --- | --- | --- |
+| **Clear `description`** | The AI model reads it to decide when to call the tool. State what it returns and what it never returns. | "Returns statements and problem IDs only, never answers." |
+| **`Annotated[..., Field(...)]` on every parameter** | Becomes the JSON Schema. Limits are enforced before your code runs. | `count` is limited to 1–10, so one call cannot request a million problems. |
+| **A Pydantic return model** | Gives the tool an `outputSchema` and machine-readable `structuredContent`. | `Worksheet` and `WorksheetItem`. |
+| **`ToolAnnotations`** | Tells the host whether the tool changes anything, so it can decide how much to ask the user. | `read_only_hint=True, idempotent_hint=True`. |
+| **`ToolError` for expected failures** | Returns a readable error with `isError: true` that the model can act on. | Raised when a topic is not offered for the grade. |
+
+:::caution Annotations are hints, not security
+A host may use `read_only_hint` to skip a confirmation prompt, but it cannot verify the claim. Only mark a tool read-only if it really is. See the [security model](../explanation/security-model.md).
+:::
+
+## 3. Try it with the Inspector
+
+From the repository root:
+
+```bash
+npx @modelcontextprotocol/inspector --cli server/.venv/bin/python snippets/extend_server.py \
+  --method tools/call --tool-name make_worksheet \
+  --tool-arg topic=fractions --tool-arg grade=7 --tool-arg count=3
+```
+
+The `structuredContent` in the response contains a title and three items with IDs `frac-g7-easy-1`, `frac-g7-easy-2` and `frac-g7-easy-3`.
+
+## 4. Add tests
+
+Test through a real MCP client, not by calling the Python function directly. That way the test also checks the schema, the validation and the error handling. The test for this example is in `server/tests/test_snippets.py`:
+
+```python
+async with Client(server) as client:
+    names = [t.name for t in (await client.list_tools()).tools]
+    assert "make_worksheet" in names
+    result = await client.call_tool("make_worksheet", {"topic": "fractions", "grade": 7, "count": 3})
+    sheet = result.structured_content
+    assert sheet["title"] == "Class 7 fractions (easy)"
+    assert [i["problem_id"] for i in sheet["items"]] == ["frac-g7-easy-1", "frac-g7-easy-2", "frac-g7-easy-3"]
+    assert all(set(item) == {"problem_id", "statement"} for item in sheet["items"])  # no answers
+    bad = await client.call_tool("make_worksheet", {"topic": "quadratics", "grade": 6})
+    assert bad.is_error
+```
+
+Run the suite:
+
+```bash
+cd server
+uv run pytest -q
+```
+
+## 5. Document it
+
+Add the tool to the [tools reference](../reference/tools.md) with its input schema, output and errors, and open a pull request. The [contributing guide](https://github.com/Creator-hub24/edumaths360-mcp-docs/blob/main/CONTRIBUTING.md) lists the checks CI runs.

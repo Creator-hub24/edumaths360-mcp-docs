@@ -1,0 +1,683 @@
+{
+  "description": "Real JSON-RPC 2.0 messages exchanged with the Edumaths360 Practice Server over stdio, captured by snippets/capture_payloads.py. Regenerate with: python snippets/capture_payloads.py",
+  "protocolVersion": "2025-11-25",
+  "exchanges": [
+    {
+      "title": "1. Handshake: initialize",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "initialize",
+        "id": 1,
+        "params": {
+          "protocolVersion": "2025-11-25",
+          "capabilities": {},
+          "clientInfo": {
+            "name": "capture-script",
+            "version": "1.0"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "result": {
+          "capabilities": {
+            "prompts": {
+              "listChanged": false
+            },
+            "resources": {
+              "listChanged": false,
+              "subscribe": false
+            },
+            "tools": {
+              "listChanged": false
+            }
+          },
+          "instructions": "Maths practice for Class 6-10 students. Use generate_problem to create a problem, let the student attempt it, and use check_answer to mark it. If the student is stuck, call get_hint with level 1 first and only move to higher levels if they are still stuck. Do not solve the problem for the student yourself.",
+          "protocolVersion": "2025-11-25",
+          "serverInfo": {
+            "name": "edumaths360-practice",
+            "title": "Edumaths360 Practice Server",
+            "version": "0.1.0"
+          }
+        }
+      }
+    },
+    {
+      "title": "2. Handshake: initialized notification",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "notifications/initialized"
+      },
+      "response": null
+    },
+    {
+      "title": "3. Discover tools",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/list",
+        "id": 2,
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "result": {
+          "tools": [
+            {
+              "annotations": {
+                "idempotentHint": true,
+                "openWorldHint": false,
+                "readOnlyHint": true
+              },
+              "description": "Create a maths practice problem for a Class 6-10 student. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.",
+              "inputSchema": {
+                "properties": {
+                  "topic": {
+                    "description": "Maths topic to practise.",
+                    "enum": [
+                      "linear_equations",
+                      "fractions",
+                      "percentages",
+                      "quadratics"
+                    ],
+                    "title": "Topic",
+                    "type": "string"
+                  },
+                  "grade": {
+                    "description": "Student's class (grade), 6 to 10.",
+                    "maximum": 10,
+                    "minimum": 6,
+                    "title": "Grade",
+                    "type": "integer"
+                  },
+                  "difficulty": {
+                    "default": "medium",
+                    "description": "How challenging the problem should be.",
+                    "enum": [
+                      "easy",
+                      "medium",
+                      "hard"
+                    ],
+                    "title": "Difficulty",
+                    "type": "string"
+                  },
+                  "seed": {
+                    "anyOf": [
+                      {
+                        "maximum": 999999,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Optional seed for a reproducible problem. Omit for a random one.",
+                    "title": "Seed"
+                  }
+                },
+                "required": [
+                  "topic",
+                  "grade"
+                ],
+                "type": "object",
+                "title": "generate_problemArguments"
+              },
+              "name": "generate_problem",
+              "outputSchema": {
+                "properties": {
+                  "problem_id": {
+                    "description": "Stable ID. Pass it to check_answer and get_hint.",
+                    "title": "Problem Id",
+                    "type": "string"
+                  },
+                  "topic": {
+                    "title": "Topic",
+                    "type": "string"
+                  },
+                  "grade": {
+                    "title": "Grade",
+                    "type": "integer"
+                  },
+                  "difficulty": {
+                    "title": "Difficulty",
+                    "type": "string"
+                  },
+                  "seed": {
+                    "description": "Seed used. The same topic, grade, difficulty and seed give the same problem.",
+                    "title": "Seed",
+                    "type": "integer"
+                  },
+                  "statement": {
+                    "description": "The question to show the student.",
+                    "title": "Statement",
+                    "type": "string"
+                  },
+                  "answer_format": {
+                    "description": "How the student should write their answer.",
+                    "title": "Answer Format",
+                    "type": "string"
+                  },
+                  "max_hint_level": {
+                    "title": "Max Hint Level",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "problem_id",
+                  "topic",
+                  "grade",
+                  "difficulty",
+                  "seed",
+                  "statement",
+                  "answer_format",
+                  "max_hint_level"
+                ],
+                "type": "object",
+                "description": "A new practice problem. The answer is deliberately not included.",
+                "title": "GeneratedProblem"
+              },
+              "title": "Generate a practice problem"
+            },
+            {
+              "annotations": {
+                "destructiveHint": false,
+                "openWorldHint": false,
+                "readOnlyHint": false
+              },
+              "description": "Mark a student's answer and give feedback. A wrong answer never reveals the correct one on the first attempts. The worked solution appears only once the student is correct, or after 3 wrong attempts.",
+              "inputSchema": {
+                "properties": {
+                  "problem_id": {
+                    "description": "ID returned by generate_problem.",
+                    "maxLength": 32,
+                    "pattern": "^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\\d{1,6})$",
+                    "title": "Problem Id",
+                    "type": "string"
+                  },
+                  "answer": {
+                    "description": "The student's answer, e.g. '7', 'x = -3', '5/14', '2, -5'.",
+                    "maxLength": 100,
+                    "minLength": 1,
+                    "title": "Answer",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "problem_id",
+                  "answer"
+                ],
+                "type": "object",
+                "title": "check_answerArguments"
+              },
+              "name": "check_answer",
+              "outputSchema": {
+                "properties": {
+                  "problem_id": {
+                    "title": "Problem Id",
+                    "type": "string"
+                  },
+                  "correct": {
+                    "title": "Correct",
+                    "type": "boolean"
+                  },
+                  "attempt": {
+                    "description": "How many times this problem has been checked in this session.",
+                    "title": "Attempt",
+                    "type": "integer"
+                  },
+                  "feedback": {
+                    "description": "Encouraging, specific feedback. Never contains the answer before the reveal.",
+                    "title": "Feedback",
+                    "type": "string"
+                  },
+                  "solution": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "Worked solution. Only present when correct, or after 3 wrong attempts.",
+                    "title": "Solution"
+                  }
+                },
+                "required": [
+                  "problem_id",
+                  "correct",
+                  "attempt",
+                  "feedback"
+                ],
+                "type": "object",
+                "description": "The result of marking one attempt.",
+                "title": "AnswerCheck"
+              },
+              "title": "Check a student's answer"
+            },
+            {
+              "annotations": {
+                "idempotentHint": true,
+                "openWorldHint": false,
+                "readOnlyHint": true
+              },
+              "description": "Give a progressive hint for a problem. Start at level 1 and only go higher if the student is still stuck. Hints guide the student's thinking and never state the final answer.",
+              "inputSchema": {
+                "properties": {
+                  "problem_id": {
+                    "description": "ID returned by generate_problem.",
+                    "maxLength": 32,
+                    "pattern": "^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\\d{1,6})$",
+                    "title": "Problem Id",
+                    "type": "string"
+                  },
+                  "level": {
+                    "default": 1,
+                    "description": "1 = gentle nudge, 2 = key step, 3 = last step before the answer.",
+                    "maximum": 3,
+                    "minimum": 1,
+                    "title": "Level",
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "problem_id"
+                ],
+                "type": "object",
+                "title": "get_hintArguments"
+              },
+              "name": "get_hint",
+              "outputSchema": {
+                "properties": {
+                  "problem_id": {
+                    "title": "Problem Id",
+                    "type": "string"
+                  },
+                  "level": {
+                    "title": "Level",
+                    "type": "integer"
+                  },
+                  "max_level": {
+                    "title": "Max Level",
+                    "type": "integer"
+                  },
+                  "hint": {
+                    "title": "Hint",
+                    "type": "string"
+                  },
+                  "next_step": {
+                    "title": "Next Step",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "problem_id",
+                  "level",
+                  "max_level",
+                  "hint",
+                  "next_step"
+                ],
+                "type": "object",
+                "description": "One step of guidance. Hints never state the final answer.",
+                "title": "Hint"
+              },
+              "title": "Get a hint"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "4. Generate a problem",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 3,
+        "params": {
+          "name": "generate_problem",
+          "arguments": {
+            "topic": "linear_equations",
+            "grade": 8,
+            "difficulty": "medium",
+            "seed": 42
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"topic\": \"linear_equations\",\n  \"grade\": 8,\n  \"difficulty\": \"medium\",\n  \"seed\": 42,\n  \"statement\": \"Solve for x: 7x + 7 = 105\",\n  \"answer_format\": \"a whole number, for example 7 or -3\",\n  \"max_hint_level\": 3\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false,
+          "structuredContent": {
+            "problem_id": "lin-g8-medium-42",
+            "topic": "linear_equations",
+            "grade": 8,
+            "difficulty": "medium",
+            "seed": 42,
+            "statement": "Solve for x: 7x + 7 = 105",
+            "answer_format": "a whole number, for example 7 or -3",
+            "max_hint_level": 3
+          }
+        }
+      }
+    },
+    {
+      "title": "5. Check a wrong answer (sign error)",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 4,
+        "params": {
+          "name": "check_answer",
+          "arguments": {
+            "problem_id": "lin-g8-medium-42",
+            "answer": "x = -14"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 4,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"correct\": false,\n  \"attempt\": 1,\n  \"feedback\": \"Check your signs: you have the right size of number but the wrong sign.\",\n  \"solution\": null\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false,
+          "structuredContent": {
+            "problem_id": "lin-g8-medium-42",
+            "correct": false,
+            "attempt": 1,
+            "feedback": "Check your signs: you have the right size of number but the wrong sign.",
+            "solution": null
+          }
+        }
+      }
+    },
+    {
+      "title": "6. Ask for a level 2 hint",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 5,
+        "params": {
+          "name": "get_hint",
+          "arguments": {
+            "problem_id": "lin-g8-medium-42",
+            "level": 2
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 5,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"level\": 2,\n  \"max_level\": 3,\n  \"hint\": \"Subtract 7 from both sides. You should get 7x = 98.\",\n  \"next_step\": \"Try the problem again. If still stuck, ask for level 3.\"\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false,
+          "structuredContent": {
+            "problem_id": "lin-g8-medium-42",
+            "level": 2,
+            "max_level": 3,
+            "hint": "Subtract 7 from both sides. You should get 7x = 98.",
+            "next_step": "Try the problem again. If still stuck, ask for level 3."
+          }
+        }
+      }
+    },
+    {
+      "title": "7. Check the correct answer",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 6,
+        "params": {
+          "name": "check_answer",
+          "arguments": {
+            "problem_id": "lin-g8-medium-42",
+            "answer": "14"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 6,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"correct\": true,\n  \"attempt\": 2,\n  \"feedback\": \"Correct! Well done.\",\n  \"solution\": \"7x + 7 = 105  →  7x = 98  →  x = 98 ÷ 7 = 14\"\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false,
+          "structuredContent": {
+            "problem_id": "lin-g8-medium-42",
+            "correct": true,
+            "attempt": 2,
+            "feedback": "Correct! Well done.",
+            "solution": "7x + 7 = 105  →  7x = 98  →  x = 98 ÷ 7 = 14"
+          }
+        }
+      }
+    },
+    {
+      "title": "8. Tool error: topic not offered for the grade",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 7,
+        "params": {
+          "name": "generate_problem",
+          "arguments": {
+            "topic": "quadratics",
+            "grade": 7
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 7,
+        "result": {
+          "content": [
+            {
+              "text": "Error executing tool generate_problem: 'quadratics' is not offered for Class 7. Topics for Class 7: linear_equations, fractions, percentages.",
+              "type": "text"
+            }
+          ],
+          "isError": true
+        }
+      }
+    },
+    {
+      "title": "9. List static resources",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "resources/list",
+        "id": 8,
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 8,
+        "result": {
+          "resources": [
+            {
+              "description": "Every topic the server can generate, with the grades it is offered for.",
+              "mimeType": "application/json",
+              "name": "all_topics",
+              "title": "All topics",
+              "uri": "syllabus://topics"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "10. List resource templates",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "resources/templates/list",
+        "id": 9,
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "result": {
+          "resourceTemplates": [
+            {
+              "description": "Topics and difficulty levels available for a Class 6-10 grade.",
+              "mimeType": "application/json",
+              "name": "grade_syllabus",
+              "title": "Syllabus for one grade",
+              "uriTemplate": "syllabus://grade/{grade}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "11. Read a resource",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "resources/read",
+        "id": 10,
+        "params": {
+          "uri": "syllabus://grade/9"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "result": {
+          "contents": [
+            {
+              "mimeType": "application/json",
+              "text": "{\n  \"grade\": 9,\n  \"topics\": [\n    {\n      \"topic\": \"linear_equations\",\n      \"description\": \"Solve equations in one variable, from x + b = c up to brackets on both sides.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"percentages\",\n      \"description\": \"Percentage of an amount, percentage increase/decrease, and reverse percentages.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"quadratics\",\n      \"description\": \"Solve quadratic equations by factorisation.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    }\n  ]\n}",
+              "uri": "syllabus://grade/9"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "12. List prompts",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "prompts/list",
+        "id": 11,
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 11,
+        "result": {
+          "prompts": [
+            {
+              "arguments": [
+                {
+                  "name": "topic",
+                  "required": false
+                },
+                {
+                  "name": "grade",
+                  "required": false
+                }
+              ],
+              "description": "Run a practice session where the assistant asks guiding questions instead of giving answers.",
+              "name": "socratic_tutor",
+              "title": "Socratic maths tutor"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "13. Get a prompt",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "prompts/get",
+        "id": 12,
+        "params": {
+          "name": "socratic_tutor",
+          "arguments": {
+            "topic": "fractions",
+            "grade": "7"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 12,
+        "result": {
+          "description": "Run a practice session where the assistant asks guiding questions instead of giving answers.",
+          "messages": [
+            {
+              "content": {
+                "text": "You are a patient maths tutor for a Class 7 student practising fractions.\n\nRules:\n1. Call generate_problem with topic='fractions' and grade=7, then show the student the statement.\n2. Never solve the problem for the student and never state the final answer yourself.\n3. Ask one short guiding question at a time, for example 'What operation undoes + 7?'.\n4. When the student gives an answer, call check_answer and share the feedback in your own words.\n5. If the student is stuck, call get_hint starting at level 1. Only go to the next level if they are still stuck after trying.\n6. Praise effort and method, not only correct answers.\n\nStart by greeting the student and generating the first problem.",
+                "type": "text"
+              },
+              "role": "user"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "title": "14. Protocol error: resource not found",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "resources/read",
+        "id": 13,
+        "params": {
+          "uri": "syllabus://grade/12"
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 13,
+        "error": {
+          "code": -32602,
+          "message": "No syllabus for grade '12'. Use a grade from 6 to 10.",
+          "data": {
+            "uri": "syllabus://grade/12"
+          }
+        }
+      }
+    },
+    {
+      "title": "15. Protocol error: unknown method",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/unknown_method",
+        "id": 14,
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 14,
+        "error": {
+          "code": -32601,
+          "message": "Method not found",
+          "data": "tools/unknown_method"
+        }
+      }
+    }
+  ]
+}

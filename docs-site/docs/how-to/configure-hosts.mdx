@@ -1,0 +1,101 @@
+---
+sidebar_position: 3
+title: Configure Claude Desktop and Cursor
+description: Register the Edumaths360 server in Claude Desktop and in Cursor, globally or per project.
+---
+
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Configure Claude Desktop and Cursor
+
+Both apps use the same `mcpServers` JSON format. Each entry tells the app which command starts the server. The app then launches the server as a child process and talks to it over stdio.
+
+**Before you start:** clone the repository and run `uv sync --extra dev` in `server/`. Note the absolute path of the `server` folder; the examples use `/ABSOLUTE/PATH/TO/edumaths360-mcp-docs/server`.
+
+## Server entry
+
+<Tabs groupId="launcher">
+  <TabItem value="uv" label="Using uv (recommended)" default>
+
+```json
+{
+  "mcpServers": {
+    "edumaths360": {
+      "command": "uv",
+      "args": ["--directory", "/ABSOLUTE/PATH/TO/edumaths360-mcp-docs/server", "run", "edumaths360-mcp"]
+    }
+  }
+}
+```
+
+`uv run` makes sure the server's dependencies are installed before it starts.
+
+  </TabItem>
+  <TabItem value="venv" label="Using a virtual environment">
+
+```json
+{
+  "mcpServers": {
+    "edumaths360": {
+      "command": "/ABSOLUTE/PATH/TO/edumaths360-mcp-docs/server/.venv/bin/python",
+      "args": ["-m", "edumaths360_mcp"]
+    }
+  }
+}
+```
+
+On Windows, the interpreter is at `server\.venv\Scripts\python.exe`. Use double backslashes in JSON, for example `"C:\\Users\\you\\edumaths360-mcp-docs\\server\\.venv\\Scripts\\python.exe"`.
+
+  </TabItem>
+</Tabs>
+
+## Claude Desktop
+
+1. Open **Settings → Developer → Edit Config**. The file is:
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+2. Merge the server entry into the file's `mcpServers` object.
+3. Quit and reopen Claude Desktop.
+4. Check **Settings → Developer**: `edumaths360` should be listed as running.
+
+For a guided walk-through, see the [Claude Desktop tutorial](../tutorials/connect-claude-desktop.mdx).
+
+## Cursor
+
+Cursor reads MCP servers from two places:
+
+| File | Scope |
+| --- | --- |
+| `~/.cursor/mcp.json` | Every project on your computer. |
+| `.cursor/mcp.json` in a project folder | Only that project. Commit it to share the setup with your team. |
+
+1. Create or open one of these files and paste the server entry.
+2. Open Cursor's settings and find the MCP section. `edumaths360` should appear with its three tools. Enable it if it is switched off.
+3. In the agent chat, ask: *"Use the edumaths360 tools to give me a Class 9 quadratic to practise."*
+
+:::tip Project-relative paths
+In a project-level `.cursor/mcp.json`, you can avoid hard-coding your home folder by using Cursor's `${workspaceFolder}` variable, for example `"--directory", "${workspaceFolder}/server"`. Check the [Cursor MCP documentation](https://cursor.com/docs/context/mcp) for the variables your version supports.
+:::
+
+## Optional settings
+
+The server needs no environment variables, API keys or network access. If you add a server that does need a secret, pass it with the `env` key rather than in `args`, and never commit the file that contains it:
+
+```json
+{
+  "mcpServers": {
+    "example": {
+      "command": "uv",
+      "args": ["run", "example-server"],
+      "env": {"EXAMPLE_API_KEY": "set-this-locally"}
+    }
+  }
+}
+```
+
+See the [configuration reference](../reference/configuration.md) for every option the Edumaths360 server supports.
+
+## Check that it works
+
+If the server does not appear, run the exact same command in a terminal with the [MCP Inspector](./debug-with-inspector.md). If it works there, the problem is in the app's configuration (usually the path or a JSON syntax error), not in the server.
