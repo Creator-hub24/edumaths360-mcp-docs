@@ -18,7 +18,7 @@ The server exposes three tools. Each one has a JSON Schema for its input (`input
 
 ## `generate_problem`
 
-> Create a maths practice problem for a Class 6-10 student. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.
+> Create a CAT-style quantitative aptitude or reasoning practice problem. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.
 
 **Annotations:** `readOnlyHint: true`, `idempotentHint: true`, `openWorldHint: false`.
 
@@ -26,19 +26,26 @@ The server exposes three tools. Each one has a JSON Schema for its input (`input
 
 | Name | Type | Required | Default | Constraints | Description |
 | --- | --- | --- | --- | --- | --- |
-| `topic` | string | Yes | — | `linear_equations`, `fractions`, `percentages`, `quadratics` | Maths topic to practise. |
-| `grade` | integer | Yes | — | 6 to 10 | Student's class (grade). |
+| `topic` | string | Yes | — | One of the 10 topics below | Quant or reasoning topic to practise. |
 | `difficulty` | string | No | `"medium"` | `easy`, `medium`, `hard` | How challenging the problem should be. |
 | `seed` | integer or null | No | `null` | 0 to 999999 | Seed for a reproducible problem. Omit for a random one. |
 
-Not every topic is offered for every grade:
+Every topic is offered at every difficulty:
 
-| Topic | Grades | Easy | Medium | Hard |
+| Topic | Section | Easy | Medium | Hard |
 | --- | --- | --- | --- | --- |
-| `linear_equations` | 6–10 | `x + b = c` | `ax + b = c` | `a(x + b) = cx + d` |
-| `fractions` | 6–8 | Add, same denominator | Add or subtract, different denominators | Divide |
-| `percentages` | 6–10 | p% of an amount | Percentage increase or decrease | Reverse percentage (original price before a discount) |
-| `quadratics` | 9–10 | `x² + bx + c = 0`, two positive whole-number roots | `x² + bx + c = 0`, at least one negative root | `ax² + bx + c = 0` (a from 2 to 5) with one fractional root |
+| `percentages` | quant | p% of a number | Successive increase then decrease | Price rise: percentage cut in consumption to keep spending the same |
+| `profit_loss` | quant | Selling price from cost price and profit or loss % | Marked price for a target profit after a discount | Price for a gain %, given a selling price at a loss % |
+| `ratio_proportion` | quant | Divide an amount in a ratio | Combine A:B and B:C, then find a share | Water to add to a milk-water mixture to reach a new ratio |
+| `time_speed_distance` | quant | Train passing a pole (km/h to m/s) | Average speed for a round trip | Two trains crossing, same or opposite directions |
+| `time_work` | quant | Two people working together | One person's time from the pair's time | Two filling pipes and one emptying pipe |
+| `interest` | quant | Simple interest | Compound interest for 2 years | Principal from the CI - SI difference for 2 years |
+| `linear_equations` | quant | Two numbers from their sum and difference | Pair of linear equations: find x | Present age from two age ratios |
+| `quadratics` | quant | `x² + bx + c = 0`, two positive whole-number roots | `x² + bx + c = 0`, at least one negative root | `ax² + bx + c = 0` (a from 2 to 5) with one fractional root |
+| `number_system` | quant | HCF or LCM of two numbers | Units digit of a power | Number of factors of a number |
+| `number_series` | reasoning | Next term of an arithmetic series | Geometric series or series with growing gaps | Multiply-and-add series, or two interleaved series |
+
+Numbers are chosen so that every answer is exact: a whole number, a short decimal such as 37.5, or (for quadratics) a simple fraction.
 
 <details>
 <summary>Full <code>inputSchema</code></summary>
@@ -49,17 +56,13 @@ Not every topic is offered for every grade:
   "title": "generate_problemArguments",
   "properties": {
     "topic": {
-      "description": "Maths topic to practise.",
-      "enum": ["linear_equations", "fractions", "percentages", "quadratics"],
+      "description": "Quant or reasoning topic to practise.",
+      "enum": [
+        "percentages", "profit_loss", "ratio_proportion", "time_speed_distance", "time_work",
+        "interest", "linear_equations", "quadratics", "number_system", "number_series"
+      ],
       "title": "Topic",
       "type": "string"
-    },
-    "grade": {
-      "description": "Student's class (grade), 6 to 10.",
-      "maximum": 10,
-      "minimum": 6,
-      "title": "Grade",
-      "type": "integer"
     },
     "difficulty": {
       "default": "medium",
@@ -75,7 +78,7 @@ Not every topic is offered for every grade:
       "title": "Seed"
     }
   },
-  "required": ["topic", "grade"]
+  "required": ["topic"]
 }
 ```
 
@@ -85,11 +88,11 @@ Not every topic is offered for every grade:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `problem_id` | string | Stable ID, for example `lin-g8-medium-42`. Pass it to `check_answer` and `get_hint`. |
+| `problem_id` | string | Stable ID, for example `pl-hard-42`. Pass it to `check_answer` and `get_hint`. |
+| `section` | string | Exam section: `quant` or `reasoning`. |
 | `topic` | string | The topic. |
-| `grade` | integer | The grade. |
 | `difficulty` | string | The difficulty. |
-| `seed` | integer | Seed used. The same topic, grade, difficulty and seed give the same problem. |
+| `seed` | integer | Seed used. The same topic, difficulty and seed give the same problem. |
 | `statement` | string | The question to show the student. |
 | `answer_format` | string | How the student should write their answer. |
 | `max_hint_level` | integer | Always `3`. |
@@ -99,18 +102,18 @@ The answer is **deliberately not included**. See [Security model](../explanation
 ### Example
 
 ```json title="arguments"
-{"topic": "linear_equations", "grade": 8, "difficulty": "medium", "seed": 42}
+{"topic": "profit_loss", "difficulty": "hard", "seed": 42}
 ```
 
 ```json title="structuredContent"
 {
-  "problem_id": "lin-g8-medium-42",
-  "topic": "linear_equations",
-  "grade": 8,
-  "difficulty": "medium",
+  "problem_id": "pl-hard-42",
+  "section": "quant",
+  "topic": "profit_loss",
+  "difficulty": "hard",
   "seed": 42,
-  "statement": "Solve for x: 7x + 7 = 105",
-  "answer_format": "a whole number, for example 7 or -3",
+  "statement": "By selling an article for Rs 800, a trader loses 20%. At what price, in rupees, should he sell it to gain 30%?",
+  "answer_format": "a number, for example 450 (no units, % or Rs sign needed)",
   "max_hint_level": 3
 }
 ```
@@ -120,14 +123,21 @@ The answer is **deliberately not included**. See [Security model](../explanation
 A problem ID encodes everything needed to rebuild the problem:
 
 ```text
-lin-g8-medium-42
-│   │  │      └── seed (0–999999)
-│   │  └───────── difficulty
-│   └──────────── grade (g6–g10)
-└──────────────── topic code: lin, frac, pct or quad
+pl-hard-42
+│  │    └── seed (0–999999)
+│  └─────── difficulty
+└────────── topic code
 ```
 
-IDs must match `^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\d{1,6})$` and be at most 32 characters.
+| Topic | Code | Topic | Code |
+| --- | --- | --- | --- |
+| `percentages` | `pct` | `interest` | `int` |
+| `profit_loss` | `pl` | `linear_equations` | `lin` |
+| `ratio_proportion` | `ratio` | `quadratics` | `quad` |
+| `time_speed_distance` | `tsd` | `number_system` | `num` |
+| `time_work` | `work` | `number_series` | `series` |
+
+IDs must match `^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\d{1,6})$` and be at most 32 characters.
 
 ## `check_answer`
 
@@ -140,9 +150,9 @@ IDs must match `^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\d{1,6})$` 
 | Name | Type | Required | Constraints | Description |
 | --- | --- | --- | --- | --- |
 | `problem_id` | string | Yes | Problem ID pattern, max 32 characters | ID returned by `generate_problem`. |
-| `answer` | string | Yes | 1 to 100 characters | The student's answer, for example `7`, `x = -3`, `5/14` or `2, -5`. |
+| `answer` | string | Yes | 1 to 100 characters | The student's answer, for example `1300`, `Rs 1,300`, `37.5`, `x = -3` or `2, -5`. |
 
-**Accepted answer formats.** The checker reads numbers from free text, so `14`, `x = 14` and `x=14` are equivalent. Fractions (`7/6`), decimals (`2.5`) and negative numbers (`-3`, or `−3` with a Unicode minus) all work. For quadratics, give both roots in any order: `1/3, -5` or `x = -5 or x = 1/3`.
+**Accepted answer formats.** The checker reads numbers from free text and uses the last one, so `1300`, `SP = Rs. 1300` and `Rs 1,300` are equivalent. Digit grouping with commas works in both styles (`1,200,000` and `12,00,000`). A `%` sign, units such as `km/h`, fractions (`75/2`), decimals (`37.5`) and negative numbers (`-3`, or `−3` with a Unicode minus) all work. For quadratics, give both roots in any order: `3/4, 3` or `x = 3 or x = 0.75`. There, commas separate the roots.
 
 ### Output: `AnswerCheck`
 
@@ -158,9 +168,8 @@ IDs must match `^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\d{1,6})$` 
 
 | Situation | `feedback` | `solution` |
 | --- | --- | --- |
-| Correct | "Correct! Well done." (for quadratics: "Correct! Both roots are right. Substitute each one back in to see why.") | Worked solution |
-| Correct value, fraction not simplified (for example `42/24` for `7/4`) | "Correct! Well done. Your value is right, but it is not in simplest form yet. Can you simplify it?" | Worked solution |
-| Wrong, matches a known misconception | Targeted, for example "Check your signs: you have the right size of number but the wrong sign." | `null` |
+| Correct | "Correct! Well done. Now try to solve the next one faster." (for quadratics: "Correct! Both roots are right. Substitute each one back in to see why.") | Worked solution |
+| Wrong, matches a known misconception | Targeted, for example "The gain % is worked out on the cost price, not on the old selling price." | `null` |
 | Wrong, no known misconception | "Not quite. Re-check each step, or ask for a hint." | `null` |
 | Wrong, attempt 2 | Feedback plus " Tip: call get_hint for a nudge before the next try." | `null` |
 | Wrong, attempt 3 or later | Feedback plus " You have tried this a few times, so here is the worked solution. Read it, then try a new problem." | Worked solution |
@@ -170,15 +179,15 @@ IDs must match `^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\d{1,6})$` 
 ### Example
 
 ```json title="arguments"
-{"problem_id": "lin-g8-medium-42", "answer": "x = -14"}
+{"problem_id": "pl-hard-42", "answer": "1040"}
 ```
 
 ```json title="structuredContent"
 {
-  "problem_id": "lin-g8-medium-42",
+  "problem_id": "pl-hard-42",
   "correct": false,
   "attempt": 1,
-  "feedback": "Check your signs: you have the right size of number but the wrong sign.",
+  "feedback": "The gain % is worked out on the cost price, not on the old selling price.",
   "solution": null
 }
 ```
@@ -206,13 +215,13 @@ IDs must match `^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\d{1,6})$` 
 | `hint` | string | The hint text. Never states the final answer. |
 | `next_step` | string | What the student should do next. |
 
-### Example: all three levels for `lin-g8-medium-42`
+### Example: all three levels for `pl-hard-42`
 
 | Level | `hint` |
 | --- | --- |
-| 1 | Undo the operations in reverse order: deal with the number added or subtracted first, then the multiplication. |
-| 2 | Subtract 7 from both sides. You should get 7x = 98. |
-| 3 | Now divide both sides by 7. What is 98 ÷ 7? |
+| 1 | Find the cost price first. A loss of 20% means Rs 800 is 80% of the cost price. |
+| 2 | To get the cost price, divide Rs 800 by 80 and multiply by 100. |
+| 3 | Now find 130% of that cost price. |
 
 At level 3, `next_step` is "That was the last hint. Have a go and use check_answer to see how you did." The design is explained in [The pedagogy behind hints](../explanation/hint-pedagogy.md).
 
@@ -226,14 +235,13 @@ The call succeeds at the protocol level, but the result has `"isError": true` an
 
 | Cause | Example message |
 | --- | --- |
-| Topic not offered for the grade | `Error executing tool generate_problem: 'quadratics' is not offered for Class 7. Topics for Class 7: linear_equations, fractions, percentages.` |
-| Answer contains no number | `Error executing tool check_answer: I could not find a number in that answer. Expected format: a whole number, for example 7 or -3.` |
+| Answer contains no number | `Error executing tool check_answer: I could not find a number in that answer. Expected format: a number, for example 450 (no units, % or Rs sign needed).` |
 | Fraction with zero denominator | `Error executing tool check_answer: A fraction cannot have 0 as its denominator. Expected format: …` |
 | Argument fails the schema (wrong type, out of range, bad pattern, empty) | `Error executing tool get_hint: 1 validation error for get_hintArguments` followed by `level` and `Input should be less than or equal to 3 [type=less_than_equal, input_value=5, input_type=int]` |
-| Unknown topic | `… topic  Input should be 'linear_equations', 'fractions', 'percentages' or 'quadratics' [type=literal_error, …]` |
-| Invalid problem ID, such as `../etc/passwd` | `… problem_id  String should match pattern '^(lin\|frac\|pct\|quad)-g([6-9]\|10)-(easy\|medium\|hard)-(\d{1,6})$' [type=string_pattern_mismatch, …]` |
+| Unknown topic or difficulty | `… topic  Input should be 'percentages', 'profit_loss', 'ratio_proportion', …, 'number_system' or 'number_series' [type=literal_error, …]` |
+| Invalid problem ID, such as `../etc/passwd` | `… problem_id  String should match pattern '^(pct\|pl\|ratio\|tsd\|work\|int\|lin\|quad\|num\|series)-(easy\|medium\|hard)-(\d{1,6})$' [type=string_pattern_mismatch, …]` |
 
-Schema validation runs **before** the tool's code. An invalid argument never reaches the maths layer.
+Schema validation runs **before** the tool's code. An invalid argument never reaches the problem engine.
 
 ### Protocol errors (JSON-RPC `error`)
 
@@ -241,7 +249,7 @@ The request itself is rejected, and the response has an `error` object instead o
 
 | Code | Name | When |
 | --- | --- | --- |
-| `-32602` | Invalid params | Reading an unknown resource such as `syllabus://grade/12`, or invalid arguments to the `socratic_tutor` prompt. |
+| `-32602` | Invalid params | Reading an unknown resource such as `syllabus://section/varc`, or invalid arguments to the `socratic_tutor` prompt. |
 | `-32601` | Method not found | Calling a method the server does not implement. |
 
 Full request and response pairs are in the [JSON-RPC examples](./json-rpc-examples.mdx).

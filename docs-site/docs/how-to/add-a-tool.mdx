@@ -9,7 +9,7 @@ import ExtendServer from '!!raw-loader!@site/../snippets/extend_server.py';
 
 # Add a new tool
 
-This guide shows how to add a tool to the Edumaths360 Practice Server. The example adds **`make_worksheet`**, which returns several problems at once so a teacher can print a worksheet.
+This guide shows how to add a tool to the Edumaths360 Practice Server. The example adds **`make_worksheet`**, which returns several problems at once so a coaching teacher can hand out a timed practice set.
 
 **Before you start:** you have cloned the repository and run `uv sync --extra dev` in `server/`. If MCP tools are new to you, do the [first tutorial](../tutorials/first-mcp-server.mdx) first.
 
@@ -39,7 +39,7 @@ To make the tool part of the package instead, put the same function in `server/s
 | **`Annotated[..., Field(...)]` on every parameter** | Becomes the JSON Schema. Limits are enforced before your code runs. | `count` is limited to 1–10, so one call cannot request a million problems. |
 | **A Pydantic return model** | Gives the tool an `outputSchema` and machine-readable `structuredContent`. | `Worksheet` and `WorksheetItem`. |
 | **`ToolAnnotations`** | Tells the host whether the tool changes anything, so it can decide how much to ask the user. | `read_only_hint=True, idempotent_hint=True`. |
-| **`ToolError` for expected failures** | Returns a readable error with `isError: true` that the model can act on. | Raised when a topic is not offered for the grade. |
+| **`ToolError` for expected failures** | Returns a readable error with `isError: true` that the model can act on. | Raised if generating a problem fails, for example for an out-of-range seed. |
 
 :::caution Annotations are hints, not security
 A host may use `read_only_hint` to skip a confirmation prompt, but it cannot verify the claim. Only mark a tool read-only if it really is. See the [security model](../explanation/security-model.md).
@@ -52,10 +52,10 @@ From the repository root:
 ```bash
 npx @modelcontextprotocol/inspector --cli server/.venv/bin/python snippets/extend_server.py \
   --method tools/call --tool-name make_worksheet \
-  --tool-arg topic=fractions --tool-arg grade=7 --tool-arg count=3
+  --tool-arg topic=interest --tool-arg count=3
 ```
 
-The `structuredContent` in the response contains a title and three items with IDs `frac-g7-easy-1`, `frac-g7-easy-2` and `frac-g7-easy-3`.
+The `structuredContent` in the response contains the title `Interest practice set (easy)` and three items with IDs `int-easy-1`, `int-easy-2` and `int-easy-3`.
 
 ## 4. Add tests
 
@@ -65,12 +65,12 @@ Test through a real MCP client, not by calling the Python function directly. Tha
 async with Client(server) as client:
     names = [t.name for t in (await client.list_tools()).tools]
     assert "make_worksheet" in names
-    result = await client.call_tool("make_worksheet", {"topic": "fractions", "grade": 7, "count": 3})
+    result = await client.call_tool("make_worksheet", {"topic": "interest", "count": 3})
     sheet = result.structured_content
-    assert sheet["title"] == "Class 7 fractions (easy)"
-    assert [i["problem_id"] for i in sheet["items"]] == ["frac-g7-easy-1", "frac-g7-easy-2", "frac-g7-easy-3"]
+    assert sheet["title"] == "Interest practice set (easy)"
+    assert [i["problem_id"] for i in sheet["items"]] == ["int-easy-1", "int-easy-2", "int-easy-3"]
     assert all(set(item) == {"problem_id", "statement"} for item in sheet["items"])  # no answers
-    bad = await client.call_tool("make_worksheet", {"topic": "quadratics", "grade": 6})
+    bad = await client.call_tool("make_worksheet", {"topic": "interest", "count": 11})
     assert bad.is_error
 ```
 

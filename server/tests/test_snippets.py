@@ -48,10 +48,10 @@ async def _check_worksheet(server):
     async with Client(server) as client:
         names = [t.name for t in (await client.list_tools()).tools]
         assert "make_worksheet" in names
-        result = await client.call_tool("make_worksheet", {"topic": "fractions", "grade": 7, "count": 3})
+        result = await client.call_tool("make_worksheet", {"topic": "interest", "count": 3})
         sheet = result.structured_content
-        assert sheet["title"] == "Class 7 fractions (easy)"
-        assert [i["problem_id"] for i in sheet["items"]] == ["frac-g7-easy-1", "frac-g7-easy-2", "frac-g7-easy-3"]
+        assert sheet["title"] == "Interest practice set (easy)"
+        assert [i["problem_id"] for i in sheet["items"]] == ["int-easy-1", "int-easy-2", "int-easy-3"]
         assert all(set(item) == {"problem_id", "statement"} for item in sheet["items"])  # no answers
-        bad = await client.call_tool("make_worksheet", {"topic": "quadratics", "grade": 6})
+        bad = await client.call_tool("make_worksheet", {"topic": "interest", "count": 11})
         assert bad.is_error

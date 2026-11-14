@@ -6,11 +6,11 @@ description: Why hints come in three levels, why the solution waits for three at
 
 # Hint pedagogy
 
-Most of this server is ordinary engineering. The parts on this page come from classroom teaching: how students actually get stuck, and what kind of help moves them forward without doing the thinking for them.
+Most of this server is ordinary engineering. The parts on this page come from teaching quantitative aptitude and reasoning to CAT and other competitive-exam aspirants: how they actually get stuck, and what kind of help moves them forward without doing the thinking for them.
 
 ## The problem with "just ask the AI"
 
-An AI model is very good at solving a Class 8 equation. That is the problem. If a student asks for help and gets the full solution, they have practised reading, not maths. Good tutoring gives the *smallest* nudge that gets the student moving again.
+An AI model is very good at solving a CAT profit-and-loss or time-and-work question. That is the problem. If an aspirant asks for help and gets the full solution, they have practised reading, not problem solving, and the exam will not give them a solution to read. Good coaching gives the *smallest* nudge that gets the student moving again.
 
 So the server is built around three ideas:
 
@@ -24,31 +24,31 @@ Each problem has three hints. The `instructions` and the `socratic_tutor` prompt
 
 | Level | Purpose | Gives away |
 | --- | --- | --- |
-| 1 | Point to the right **method** or the key question. | Nothing about the numbers. |
-| 2 | Do the **first step** with the real numbers. | One intermediate result. |
-| 3 | Describe the **last step** as a question. | Everything except the final answer. |
+| 1 | Point to the right **method** or the key idea. | Little or nothing about the numbers. |
+| 2 | Set up the **key step** with the real numbers. | At most one intermediate result. |
+| 3 | Describe the **last step** as an instruction or question. | Everything except the final answer. |
 
 Here are the real hints for three generated problems.
 
-### `lin-g8-medium-42`: Solve for x: 7x + 7 = 105
+### `pl-hard-42`: By selling an article for Rs 800, a trader loses 20%. At what price should he sell it to gain 30%?
 
-1. "Undo the operations in reverse order: deal with the number added or subtracted first, then the multiplication."
-2. "Subtract 7 from both sides. You should get 7x = 98."
-3. "Now divide both sides by 7. What is 98 ÷ 7?"
+1. "Find the cost price first. A loss of 20% means Rs 800 is 80% of the cost price."
+2. "To get the cost price, divide Rs 800 by 80 and multiply by 100."
+3. "Now find 130% of that cost price."
 
-### `frac-g7-medium-3`: Work out 1/4 + 11/12
+### `work-hard-7`: Pipes A and B fill a tank in 6 and 24 hours; pipe C empties it in 8 hours. All three open: how long to fill?
 
-1. "You can only add fractions when the denominators match. What is the lowest common multiple (LCM) of 4 and 12?"
-2. "The LCM is 12. Rewrite both fractions over 12: 1/4 = 3/12 and 11/12 = 11/12."
-3. "Add the new numerators, keep the denominator 12, then simplify."
+1. "Filling pipes add water every hour; the emptying pipe takes some away."
+2. "Take the tank as 24 units (the LCM of 6, 24 and 8). A adds 4, B adds 1 and C removes 3 units each hour."
+3. "Find the net units filled per hour, then divide the size of the tank by it."
 
-### `quad-g10-hard-7`: Solve 3x² + 14x - 5 = 0
+### `quad-hard-42`: Solve 4x² - 15x + 9 = 0
 
-1. "Multiply a × c: 3 × -5 = -15. Find two numbers that multiply to -15 and add up to 14."
-2. "The two numbers are 15 and -1. Split the middle term: 3x² + 15x - x - 5 = 0, then factorise in pairs (grouping)."
+1. "Multiply a × c: 4 × 9 = 36. Find two numbers that multiply to 36 and add up to -15."
+2. "The two numbers are -12 and -3. Split the middle term: 4x² - 12x - 3x + 9 = 0, then factorise in pairs (grouping)."
 3. "You should end up with two brackets multiplied together equal to 0. Set each bracket to 0 and solve each small linear equation."
 
-Notice that level 3 always leaves the student one real step to do. The test suite checks this for every generated problem: no hint may contain the final answer.
+Notice that level 3 always leaves the student one real step to do. The test suite checks this for every topic and difficulty over many seeds: no hint may state the final answer.
 
 ## Holding back the solution
 
@@ -74,28 +74,25 @@ stateDiagram-v2
 
 ## Feedback that names the mistake
 
-Many wrong answers in school maths come from a small number of well-known misconceptions. The generator predicts some of these wrong answers for each problem and attaches targeted feedback. These are real responses from the server:
+Many wrong answers in quantitative aptitude come from a small number of well-known traps, and exam setters build answer options around them. The generator predicts some of these wrong answers for each problem and attaches targeted feedback. These are real responses from the server:
 
 | Problem | Student answer | Feedback |
 | --- | --- | --- |
-| `frac-g7-medium-3`: 1/4 + 11/12 | `3/4` | "It looks like you added the numerators and the denominators separately. Make the denominators the same first." |
-| `pct-g8-hard-5`: after a 20% discount, a school bag costs Rs 240. Original price? | `288` | "You added 20% of the sale price, but the discount was taken from the original price, which is a bigger number." |
-| `lin-g8-medium-42`: 7x + 7 = 105 | `-14` | "Check your signs: you have the right size of number but the wrong sign." |
-| `quad-g10-hard-7`: 3x² + 14x - 5 = 0 | `1/3` | "One root is right. A quadratic like this has two roots; find the other one." |
+| `pl-hard-42`: sold at Rs 800 for a 20% loss; price for a 30% gain? | `1040` | "The gain % is worked out on the cost price, not on the old selling price." |
+| `pct-medium-7`: Rs 8400, up 20%, then down 20%. Final price? | `8400` | "You combined the two percentages directly. The decrease is taken on the increased price, so apply the changes one after the other." |
+| `tsd-medium-7`: P to Q at 104 km/h, back at 65 km/h. Average speed? | `84.5` | "That is the simple average of the two speeds. More time is spent at the slower speed, so the true average is lower." |
+| `work-hard-7`: pipes of 6 h and 24 h fill, 8 h empties | `4.8` | "You left out pipe C, which is emptying the tank." |
+| `quad-hard-42`: 4x² - 15x + 9 = 0 | `3` | "One root is right. A quadratic like this has two roots; find the other one." |
 
-The answer `3/4` for 1/4 + 11/12 comes from (1 + 11)/(4 + 12) = 12/16 = 3/4. The percentage example is the classic "reverse percentage" error: the student calculates 240 + 20% of 240 = 288, but the discount was 20% of the *original* price, which was Rs 300.
+The answer `1040` comes from taking 130% of the old selling price (800 × 1.3) instead of 130% of the cost price, which is Rs 1000. The `8400` answer is the classic "+20% then -20% cancels out" trap: the second change is taken on Rs 10080, so the price ends lower than it started.
 
-## Being kind about correct-but-unfinished answers
+## Rewarding speed as well as accuracy
 
-An answer can be mathematically right but not in the requested form. For `frac-g7-medium-3`, the answer `14/12` is marked **correct**, with a nudge:
-
-> "Correct! Well done. Your value is right, but it is not in simplest form yet. Can you simplify it?"
-
-Marking it wrong would punish the student for the part they got right. Marking it correct with no comment would miss a chance to teach. The server does both: it credits the work and asks for the last step.
+Competitive exams are timed, so a correct answer is not the end of the lesson. The feedback for a correct answer says "Now try to solve the next one faster", and the `socratic_tutor` prompt asks the model to discuss whether a shortcut or an elimination trick would also work once the student is right. The method comes first; speed is built on top of it.
 
 ## Context that feels familiar
 
-Word problems use situations and money that students in Indian classrooms recognise: rupees (Rs), school bags, and the "Class 6–10" grade names used in Indian schools. Familiar context lowers the reading load, so students can focus on the maths.
+Word problems use situations and money that Indian aspirants recognise: rupees (Rs), shopkeepers and discounts, trains and buses, pipes and tanks, and milk-water mixtures. These are the same settings that CAT-style and other competitive-exam questions use, so practice transfers directly to the exam.
 
 ## Further reading
 

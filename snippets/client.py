@@ -31,14 +31,14 @@ async def main() -> None:
         # 1. Generate a reproducible problem.
         result = await client.call_tool(
             "generate_problem",
-            {"topic": "linear_equations", "grade": 8, "difficulty": "medium", "seed": 42},
+            {"topic": "profit_loss", "difficulty": "hard", "seed": 42},
         )
         problem = result.structured_content
         print(f"\nProblem {problem['problem_id']}: {problem['statement']}")
 
         # 2. A wrong answer: feedback, but no answer revealed.
-        result = await client.call_tool("check_answer", {"problem_id": problem["problem_id"], "answer": "x = -14"})
-        print("Attempt 'x = -14' ->", result.structured_content["feedback"])
+        result = await client.call_tool("check_answer", {"problem_id": problem["problem_id"], "answer": "1040"})
+        print("Attempt '1040' ->", result.structured_content["feedback"])
 
         # 3. Ask for progressively stronger hints.
         for level in (1, 2):
@@ -46,20 +46,20 @@ async def main() -> None:
             print(f"Hint {level}:", result.structured_content["hint"])
 
         # 4. The correct answer unlocks the worked solution.
-        result = await client.call_tool("check_answer", {"problem_id": problem["problem_id"], "answer": "14"})
+        result = await client.call_tool("check_answer", {"problem_id": problem["problem_id"], "answer": "Rs 1,300"})
         check = result.structured_content
-        print("Attempt '14' ->", check["feedback"], "| Solution:", check["solution"])
+        print("Attempt 'Rs 1,300' ->", check["feedback"], "| Solution:", check["solution"])
 
         # 5. Errors come back as a normal result with is_error=True.
-        result = await client.call_tool("generate_problem", {"topic": "quadratics", "grade": 7})
+        result = await client.call_tool("check_answer", {"problem_id": problem["problem_id"], "answer": "no idea"})
         print("\nError example ->", result.is_error, result.content[0].text)
 
         # 6. Read a resource and fetch a prompt.
-        syllabus = await client.read_resource("syllabus://grade/9")
+        syllabus = await client.read_resource("syllabus://section/quant")
         topics = [t["topic"] for t in json.loads(syllabus.contents[0].text)["topics"]]
-        print("Class 9 topics:", ", ".join(topics))
+        print("Quant topics:", ", ".join(topics))
 
-        prompt = await client.get_prompt("socratic_tutor", {"topic": "fractions", "grade": "7"})
+        prompt = await client.get_prompt("socratic_tutor", {"topic": "time_work", "difficulty": "hard"})
         print("Prompt starts:", prompt.messages[0].content.text.splitlines()[0])
 
 

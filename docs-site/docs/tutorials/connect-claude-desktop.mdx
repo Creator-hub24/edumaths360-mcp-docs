@@ -140,10 +140,10 @@ Open **Settings → Developer**. You should see **edumaths360** in the list with
 
 Try one of these:
 
-1. **Use the prompt.** Claude Desktop lists MCP prompts in the chat input's "+" (attach) menu. Pick **Socratic maths tutor** from the edumaths360 server and enter a topic such as `fractions` and grade `7`. Menu names can change between Claude Desktop versions.
-2. **Just ask.** Type: *"I'm in Class 8. Give me a medium linear equation to practise, and don't tell me the answer."*
+1. **Use the prompt.** Claude Desktop lists MCP prompts in the chat input's "+" (attach) menu. Pick **Socratic quant tutor** from the edumaths360 server and enter a topic such as `profit_loss` and difficulty `hard`. Menu names can change between Claude Desktop versions.
+2. **Just ask.** Type: *"I'm preparing for CAT. Give me a hard profit and loss question to practise, and don't tell me the answer."*
 
-Claude calls `generate_problem` and shows you the question. Answer it with a deliberate mistake, for example the right number with the wrong sign. Claude calls `check_answer`, and the server replies with targeted feedback ("Check your signs…") instead of the correct answer. Ask for a hint and Claude calls `get_hint` at level 1.
+Claude calls `generate_problem` and shows you the question. Answer it with a typical mistake, for example working out the gain percentage on the old selling price instead of the cost price. Claude calls `check_answer`, and the server replies with targeted feedback ("The gain % is worked out on the cost price…") instead of the correct answer. Ask for a hint and Claude calls `get_hint` at level 1.
 
 Claude Desktop asks for your permission before it calls a tool. This is the **human-in-the-loop** control described in the [security model](../explanation/security-model.md#4-human-in-the-loop).
 

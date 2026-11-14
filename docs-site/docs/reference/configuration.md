@@ -24,7 +24,7 @@ All three start the server on the **stdio** transport. The server does not open 
 | --- | --- |
 | Python | 3.10 or later (CI uses 3.12) |
 | Runtime dependency | `mcp>=2.3,<3` (the official MCP Python SDK) |
-| Package name | `edumaths360-mcp`, version `0.1.0` |
+| Package name | `edumaths360-mcp`, version `0.2.0` |
 | Server name / title | `edumaths360-practice` / `Edumaths360 Practice Server` |
 
 ## Built-in limits
@@ -52,7 +52,7 @@ The server logs to **stderr** at INFO level, in this format:
 %(asctime)s %(levelname)s %(name)s: %(message)s
 ```
 
-Messages include `Starting Edumaths360 Practice Server 0.1.0 on stdio`, `generated lin-g8-medium-42` and `checked lin-g8-medium-42 attempt=1 correct=False`. Logs never contain answers or solutions. Hosts such as Claude Desktop capture stderr in their own log files.
+Messages include `Starting Edumaths360 Practice Server 0.2.0 on stdio`, `generated pl-hard-42` and `checked pl-hard-42 attempt=1 correct=False`. Logs never contain answers or solutions. Hosts such as Claude Desktop capture stderr in their own log files.
 
 :::danger Do not log to stdout
 On the stdio transport, stdout carries JSON-RPC messages. Anything else written there breaks the connection. See [Troubleshooting](../troubleshooting.md#failed-to-parse-jsonrpc-message-from-server).

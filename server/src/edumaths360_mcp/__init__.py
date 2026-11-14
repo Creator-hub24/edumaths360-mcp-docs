@@ -1,3 +1,3 @@
-"""Edumaths360 Practice Server: an MCP server for Class 6-10 maths practice."""
+"""Edumaths360 Practice Server: an MCP server for CAT/MBA quantitative aptitude and reasoning practice."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

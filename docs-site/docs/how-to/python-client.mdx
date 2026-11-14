@@ -45,19 +45,19 @@ python snippets/client.py
 ### Expected output
 
 ```text
-Connected to Edumaths360 Practice Server v0.1.0 (protocol 2026-07-28)
+Connected to Edumaths360 Practice Server v0.2.0 (protocol 2026-07-28)
 
 Tools: generate_problem, check_answer, get_hint
 
-Problem lin-g8-medium-42: Solve for x: 7x + 7 = 105
-Attempt 'x = -14' -> Check your signs: you have the right size of number but the wrong sign.
-Hint 1: Undo the operations in reverse order: deal with the number added or subtracted first, then the multiplication.
-Hint 2: Subtract 7 from both sides. You should get 7x = 98.
-Attempt '14' -> Correct! Well done. | Solution: 7x + 7 = 105  →  7x = 98  →  x = 98 ÷ 7 = 14
+Problem pl-hard-42: By selling an article for Rs 800, a trader loses 20%. At what price, in rupees, should he sell it to gain 30%?
+Attempt '1040' -> The gain % is worked out on the cost price, not on the old selling price.
+Hint 1: Find the cost price first. A loss of 20% means Rs 800 is 80% of the cost price.
+Hint 2: To get the cost price, divide Rs 800 by 80 and multiply by 100.
+Attempt 'Rs 1,300' -> Correct! Well done. Now try to solve the next one faster. | Solution: CP = 800 × 100/80 = 1000  →  new SP = 1000 × 130/100 = 1300
 
-Error example -> True Error executing tool generate_problem: 'quadratics' is not offered for Class 7. Topics for Class 7: linear_equations, fractions, percentages.
-Class 9 topics: linear_equations, percentages, quadratics
-Prompt starts: You are a patient maths tutor for a Class 7 student practising fractions.
+Error example -> True Error executing tool check_answer: I could not find a number in that answer. Expected format: a number, for example 450 (no units, % or Rs sign needed).
+Quant topics: percentages, profit_loss, ratio_proportion, time_speed_distance, time_work, interest, linear_equations, quadratics, number_system
+Prompt starts: You are a patient quantitative aptitude and reasoning coach for a CAT/MBA aspirant practising time and work at hard difficulty.
 ```
 
 The problem is the same every time because the client passes `seed=42`. The server also writes log lines to stderr; they are not shown here.
@@ -80,17 +80,17 @@ Every `call_tool` result has:
 
 ### Two kinds of error
 
-1. **Tool errors** come back as a normal result with `is_error=True`, as in step 5 of the client. Bad arguments and "topic not offered" errors work this way, so a model can read the message and correct itself.
-2. **Protocol errors** raise an `MCPError` exception in the client. For example, reading `syllabus://grade/12` fails with JSON-RPC error code `-32602`. See the [error reference](../reference/tools.md#errors).
+1. **Tool errors** come back as a normal result with `is_error=True`, as in step 5 of the client. Bad arguments and answers the server cannot read work this way, so a model can read the message and correct itself.
+2. **Protocol errors** raise an `MCPError` exception in the client. For example, reading `syllabus://section/varc` fails with JSON-RPC error code `-32602`. See the [error reference](../reference/tools.md#errors).
 
 ```python
 from mcp import MCPError
 
 try:
-    await client.read_resource("syllabus://grade/12")
+    await client.read_resource("syllabus://section/varc")
 except MCPError as exc:
     print(exc.error.code, exc.error.message)
-    # -32602 No syllabus for grade '12'. Use a grade from 6 to 10.
+    # -32602 No syllabus for section 'varc'. Use one of: quant, reasoning.
 ```
 
 ### Testing in-process
@@ -102,7 +102,7 @@ from mcp import Client
 from edumaths360_mcp.server import mcp
 
 async with Client(mcp) as client:
-    result = await client.call_tool("generate_problem", {"topic": "fractions", "grade": 7})
+    result = await client.call_tool("generate_problem", {"topic": "time_work"})
 ```
 
 This runs the full MCP message exchange in memory, which is fast and needs no process management.

@@ -17,7 +17,5 @@ async def test_server_runs_over_stdio():
     params = StdioServerParameters(command=sys.executable, args=["-m", "edumaths360_mcp"])
     async with Client(params) as client:
         assert client.server_info.name == "edumaths360-practice"
-        result = await client.call_tool(
-            "generate_problem", {"topic": "fractions", "grade": 7, "difficulty": "easy", "seed": 1}
-        )
-        assert result.structured_content["problem_id"] == "frac-g7-easy-1"
+        result = await client.call_tool("generate_problem", {"topic": "time_work", "difficulty": "easy", "seed": 1})
+        assert result.structured_content["problem_id"] == "work-easy-1"

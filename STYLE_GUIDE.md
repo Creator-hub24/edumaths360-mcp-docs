@@ -29,8 +29,8 @@ These rules keep the docs clear for every reader, including people who read Engl
 
 <!-- vale off -->
 
-- Use British English spelling (behaviour, recognise, practise as a verb), matching the Indian classroom audience.
-- Use **Class 6–10** for grades in text. The API argument is still `grade`.
+- Use British English spelling (behaviour, recognise, practise as a verb), matching the Indian exam-preparation audience.
+- Describe the audience as **CAT/MBA aspirants** or **competitive-exam aspirants**, and the subject as **quantitative aptitude** (quant) and **logical reasoning**. Write topic names in plain words in text ("time and work") and as the API value in code (`time_work`).
 - Write **MCP**, not "MCP protocol" (the P already means protocol).
 - Product names: **GitHub**, **JavaScript**, **TypeScript**, **JSON-RPC**, **Docusaurus**, **Claude Desktop**, **MCP Inspector**.
 - Avoid Latin abbreviations: "for example" not "e.g.", "that is" not "i.e.".

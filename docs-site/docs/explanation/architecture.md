@@ -6,7 +6,7 @@ description: How the Edumaths360 server is structured, how a practice round flow
 
 # Architecture
 
-The server is about 370 lines of protocol code on top of about 560 lines of pure maths. This page explains how the parts fit together and why they are split this way.
+The server is about 370 lines of protocol code on top of about 1,240 lines of pure-Python problem generation and checking for 10 quant and reasoning topics. This page explains how the parts fit together and why they are split this way.
 
 ## Components
 
@@ -39,7 +39,7 @@ flowchart TB
 | Interface | `server/src/edumaths360_mcp/server.py` | Defines the tools, resources and prompt. Applies the teaching rules: when to reveal a solution and what to say on attempt 2. |
 | Domain | `server/src/edumaths360_mcp/problems.py` | Generates problems, hints, solutions and misconception feedback. Parses and checks answers. Knows nothing about MCP. |
 
-Keeping the maths layer free of MCP has two benefits. It can be tested directly and quickly (most of the test suite never starts a server), and the same code could power a website or a worksheet generator later.
+Keeping the problem engine free of MCP has two benefits. It can be tested directly and quickly (most of the test suite never starts a server), and the same code could power a website or a worksheet generator later.
 
 ## A practice round
 
@@ -51,45 +51,45 @@ sequenceDiagram
     participant Server as Edumaths360 server
     participant Maths as problems.py
 
-    Student->>Host: "Give me a Class 8 equation to practise"
-    Host->>Server: tools/call generate_problem {topic, grade: 8, ...}
-    Server->>Maths: generate("linear_equations", 8, "medium", seed)
+    Student->>Host: "Give me a hard profit and loss question"
+    Host->>Server: tools/call generate_problem {topic: "profit_loss", difficulty: "hard"}
+    Server->>Maths: generate("profit_loss", "hard", seed)
     Maths-->>Server: Problem (statement, answer, hints, solution)
     Server-->>Host: problem_id + statement (no answer)
-    Host-->>Student: "Solve for x: 7x + 7 = 105"
+    Host-->>Student: "Sold at Rs 800 for a 20% loss. Price for a 30% gain?"
 
-    Student->>Host: "x = -14"
+    Student->>Host: "1040"
     Host->>Server: tools/call check_answer {problem_id, answer}
     Server->>Maths: problem_from_id(id), check(problem, answer)
-    Maths-->>Server: wrong, sign-error feedback
+    Maths-->>Server: wrong, "wrong base" feedback
     Server-->>Host: correct: false, attempt: 1, solution: null
-    Host-->>Student: "Check your signs..."
+    Host-->>Student: "The gain % is worked out on the cost price..."
 
     Student->>Host: "I'm stuck"
     Host->>Server: tools/call get_hint {problem_id, level: 1}
     Server-->>Host: hint (never the answer)
 
-    Student->>Host: "14"
-    Host->>Server: tools/call check_answer {problem_id, answer: "14"}
+    Student->>Host: "1300"
+    Host->>Server: tools/call check_answer {problem_id, answer: "1300"}
     Server-->>Host: correct: true, solution
-    Host-->>Student: "Correct! 7x = 98, so x = 14"
+    Host-->>Student: "Correct! CP = 1000, so SP = 1300"
 ```
 
 ## The problem ID is the problem
 
-The most important design decision: **the server does not store problems.** A problem ID such as `lin-g8-medium-42` contains the topic, grade, difficulty and seed. Generation is deterministic: the same four values always produce the same problem, because the random number generator is seeded with them.
+The most important design decision: **the server does not store problems.** A problem ID such as `pl-hard-42` contains the topic, difficulty and seed. Generation is deterministic: the same three values always produce the same problem, because the random number generator is seeded with them.
 
-So when `check_answer` receives `lin-g8-medium-42`, it rebuilds the problem from the ID, including the answer, and compares. This gives:
+So when `check_answer` receives `pl-hard-42`, it rebuilds the problem from the ID, including the answer, and compares. This gives:
 
 - **No database and no shared state** between calls, apart from a small attempt counter.
 - **The answer never leaves the server.** The client only ever holds the ID.
-- **Reproducibility.** A teacher can share an ID, a test can use an ID as a fixture, and a bug report can include an ID that reproduces the exact problem.
+- **Reproducibility.** A teacher can share an ID with a whole batch, a test can use an ID as a fixture, and a bug report can include an ID that reproduces the exact problem.
 - **Strict validation for free.** The ID must match a fixed regular expression, so it cannot carry anything unexpected, such as a file path.
 
 ```mermaid
 flowchart LR
-    ID["problem_id<br/>lin-g8-medium-42"] --> Parse["parse_problem_id()<br/>regex check"]
-    Parse -->|"valid"| Seed["Random('linear_equations|8|medium|42')"]
+    ID["problem_id<br/>pl-hard-42"] --> Parse["parse_problem_id()<br/>regex check"]
+    Parse -->|"valid"| Seed["Random('profit_loss|hard|42')"]
     Parse -->|"invalid"| Err["ToolError<br/>isError: true"]
     Seed --> Problem["Same Problem every time:<br/>statement, answer, hints, solution"]
     Problem --> Check["check_answer compares"]
@@ -106,7 +106,7 @@ The counter lives only in memory. Restarting the server resets it, which is acce
 
 | Test file | What it covers | How |
 | --- | --- | --- |
-| `test_problems.py` | Every topic, grade and difficulty: determinism, answer checking, hint safety, misconception feedback, parsing. | Calls `problems.py` directly. Parametrised over many seeds. |
+| `test_problems.py` | Every topic and difficulty: determinism, tidy exact answers, answer checking, hint safety, misconception feedback, parsing. | Calls `problems.py` directly. Parametrised over many seeds. |
 | `test_server.py` | Schemas, the reveal policy, hint levels, every error path, resources and the prompt. | A real MCP `Client` connected to the server in memory. |
 | `test_stdio.py` | The installed server starts and answers over stdio. | Launches `python -m edumaths360_mcp` as a subprocess. |
 | `test_snippets.py` | The code shown in these docs still works. | Runs the tutorial server and the how-to example. |

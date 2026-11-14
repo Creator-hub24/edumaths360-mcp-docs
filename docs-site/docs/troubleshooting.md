@@ -79,7 +79,7 @@ from mcp.types import INVALID_PARAMS
 raise MCPError(INVALID_PARAMS, f"Unknown topic '{topic}'. Choose one of: {', '.join(TOPICS)}.")
 ```
 
-The client now receives `-32602 Unknown topic 'algebra'. Choose one of: linear_equations, fractions, percentages, quadratics.`
+The client now receives `-32602 Unknown topic 'algebra'. Choose one of: percentages, profit_loss, ratio_proportion, time_speed_distance, time_work, interest, linear_equations, quadratics, number_system, number_series.`
 
 ## Tool descriptions contain odd spaces and line breaks
 

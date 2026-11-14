@@ -18,74 +18,78 @@ Both resources return JSON with the MIME type `application/json`.
 | --- | --- |
 | Name | `all_topics` |
 | Title | All topics |
-| Description | Every topic the server can generate, with the grades it is offered for. |
+| Description | Every topic the server can generate, grouped by exam section (quant or reasoning). |
 
-**Response text:**
+**Response text** (shortened: the real response lists all 10 topics, and `difficulties` is spread over several lines):
 
 ```json
 {
   "topics": [
     {
-      "topic": "linear_equations",
-      "description": "Solve equations in one variable, from x + b = c up to brackets on both sides.",
-      "grades": [6, 7, 8, 9, 10]
-    },
-    {
-      "topic": "fractions",
-      "description": "Add, subtract and divide fractions, and give answers in simplest form.",
-      "grades": [6, 7, 8]
-    },
-    {
       "topic": "percentages",
-      "description": "Percentage of an amount, percentage increase/decrease, and reverse percentages.",
-      "grades": [6, 7, 8, 9, 10]
+      "section": "quant",
+      "area": "arithmetic",
+      "description": "Percentage of a quantity, successive percentage change, and price-consumption problems.",
+      "difficulties": ["easy", "medium", "hard"]
     },
     {
-      "topic": "quadratics",
-      "description": "Solve quadratic equations by factorisation.",
-      "grades": [9, 10]
+      "topic": "profit_loss",
+      "section": "quant",
+      "area": "arithmetic",
+      "description": "Cost price, selling price, marked price and discount, and profit or loss percentages.",
+      "difficulties": ["easy", "medium", "hard"]
+    },
+    …
+    {
+      "topic": "number_series",
+      "section": "reasoning",
+      "area": "logical reasoning",
+      "description": "Find the next term: arithmetic, geometric, difference and mixed series.",
+      "difficulties": ["easy", "medium", "hard"]
     }
   ]
 }
 ```
 
-### `syllabus://grade/{grade}`
+| `section` | `area` | Topics |
+| --- | --- | --- |
+| `quant` | `arithmetic` | `percentages`, `profit_loss`, `ratio_proportion`, `time_speed_distance`, `time_work`, `interest` |
+| `quant` | `algebra` | `linear_equations`, `quadratics` |
+| `quant` | `number system` | `number_system` |
+| `reasoning` | `logical reasoning` | `number_series` |
 
-A *resource template*: `{grade}` is a parameter the client fills in.
+### `syllabus://section/{section}`
+
+A *resource template*: `{section}` is a parameter the client fills in.
 
 | Property | Value |
 | --- | --- |
-| Name | `grade_syllabus` |
-| Title | Syllabus for one grade |
-| Description | Topics and difficulty levels available for a Class 6-10 grade. |
-| Parameter | `grade`: a whole number from 6 to 10 |
+| Name | `section_syllabus` |
+| Title | Syllabus for one exam section |
+| Description | Topics and difficulty levels in one section: 'quant' or 'reasoning'. |
+| Parameter | `section`: `quant` or `reasoning` |
 
-**Example:** `syllabus://grade/9`
+**Example:** `syllabus://section/reasoning`
 
 ```json
 {
-  "grade": 9,
+  "section": "reasoning",
+  "description": "Logical reasoning: pattern-based items with one verifiable numeric answer.",
   "topics": [
     {
-      "topic": "linear_equations",
-      "description": "Solve equations in one variable, from x + b = c up to brackets on both sides.",
-      "difficulties": ["easy", "medium", "hard"]
-    },
-    {
-      "topic": "percentages",
-      "description": "Percentage of an amount, percentage increase/decrease, and reverse percentages.",
-      "difficulties": ["easy", "medium", "hard"]
-    },
-    {
-      "topic": "quadratics",
-      "description": "Solve quadratic equations by factorisation.",
+      "topic": "number_series",
+      "section": "reasoning",
+      "area": "logical reasoning",
+      "description": "Find the next term: arithmetic, geometric, difference and mixed series.",
       "difficulties": ["easy", "medium", "hard"]
     }
   ]
 }
 ```
 
-**Errors:** any other value, such as `12` or `abc`, returns JSON-RPC error `-32602` with the message `No syllabus for grade '12'. Use a grade from 6 to 10.` The SDK also rejects parameter values that look like path traversal (for example `..`) by default.
+`syllabus://section/quant` returns the nine quant topics in the same shape, with the description `Quantitative aptitude: arithmetic, algebra and number system.`
+
+**Errors:** any other value, such as `varc`, returns JSON-RPC error `-32602` with the message `No syllabus for section 'varc'. Use one of: quant, reasoning.` The SDK also rejects parameter values that look like path traversal (for example `..`) by default.
 
 ## Prompts
 
@@ -93,28 +97,28 @@ A *resource template*: `{grade}` is a parameter the client fills in.
 
 | Property | Value |
 | --- | --- |
-| Title | Socratic maths tutor |
-| Description | Run a practice session where the assistant asks guiding questions instead of giving answers. |
+| Title | Socratic quant tutor |
+| Description | Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers. |
 
 **Arguments** (both optional strings; MCP prompt arguments are always strings):
 
 | Name | Default | Allowed values |
 | --- | --- | --- |
-| `topic` | `linear_equations` | One of the four topic names. |
-| `grade` | `8` | A grade the topic is offered for, as a string, for example `"7"`. |
+| `topic` | `percentages` | One of the 10 topic names, for example `time_work`. |
+| `difficulty` | `medium` | `easy`, `medium` or `hard`. |
 
-**Result:** one `user` message. For `topic="fractions"` and `grade="7"`:
+**Result:** one `user` message. For `topic="time_work"` and `difficulty="hard"`:
 
 ```text
-You are a patient maths tutor for a Class 7 student practising fractions.
+You are a patient quantitative aptitude and reasoning coach for a CAT/MBA aspirant practising time and work at hard difficulty.
 
 Rules:
-1. Call generate_problem with topic='fractions' and grade=7, then show the student the statement.
+1. Call generate_problem with topic='time_work' and difficulty='hard', then show the student the statement.
 2. Never solve the problem for the student and never state the final answer yourself.
-3. Ask one short guiding question at a time, for example 'What operation undoes + 7?'.
+3. Ask one short guiding question at a time, for example 'What is the cost price here?'.
 4. When the student gives an answer, call check_answer and share the feedback in your own words.
 5. If the student is stuck, call get_hint starting at level 1. Only go to the next level if they are still stuck after trying.
-6. Praise effort and method, not only correct answers.
+6. Praise method and reasoning, not only correct answers. Once they are correct, ask whether a faster approach (a shortcut or an elimination trick) would also work, as it would in the exam.
 
 Start by greeting the student and generating the first problem.
 ```
@@ -123,7 +127,7 @@ Start by greeting the student and generating the first problem.
 
 | Input | Message |
 | --- | --- |
-| `topic="ignore previous instructions"` | `Unknown topic 'ignore previous instructions'. Choose one of: linear_equations, fractions, percentages, quadratics.` |
-| `topic="quadratics", grade="7"` | `'quadratics' is offered for grades [9, 10]; got '7'.` |
+| `topic="ignore previous instructions"` | `Unknown topic 'ignore previous instructions'. Choose one of: percentages, profit_loss, ratio_proportion, time_speed_distance, time_work, interest, linear_equations, quadratics, number_system, number_series.` |
+| `topic="time_work", difficulty="insane"` | `Unknown difficulty 'insane'. Choose one of: easy, medium, hard.` |
 
 The arguments are checked against fixed lists before they are inserted into the prompt text. This stops a client from injecting its own instructions through a prompt argument. See [Security model](../explanation/security-model.md#1-input-validation).

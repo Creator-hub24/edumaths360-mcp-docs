@@ -7,7 +7,7 @@ const REPO = 'https://github.com/Creator-hub24/edumaths360-mcp-docs';
 const config: Config = {
   title: 'Edumaths360 MCP Docs',
   tagline:
-    'Developer documentation for an MCP server that lets AI assistants run maths practice without doing the thinking for the student.',
+    'Developer documentation for an MCP server that lets AI assistants run CAT/MBA quantitative aptitude and reasoning practice without doing the thinking for the aspirant.',
   favicon: 'img/favicon.svg',
 
   future: {

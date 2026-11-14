@@ -8,9 +8,9 @@ import VideoPlaceholder from '@site/src/components/VideoPlaceholder';
 
 # Introduction
 
-The **Edumaths360 Practice Server** is a small, working [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server. It lets an AI assistant, such as Claude Desktop or Cursor, run maths practice for students in Class 6 to 10 (ages roughly 11 to 16).
+The **Edumaths360 Practice Server** is a small, working [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server. It lets an AI assistant, such as Claude Desktop or Cursor, run quantitative aptitude (quant) and logical reasoning practice for CAT, other MBA entrance tests and similar competitive exams.
 
-The key design rule is simple: **the assistant should help the student think, not think for them.** The server creates problems, marks answers, and gives step-by-step hints, but it never hands over the answer early.
+The key design rule is simple: **the assistant should help the aspirant think, not think for them.** In an exam hall there is no chatbot, so practice has to build the student's own method and speed. The server creates problems, marks answers, and gives step-by-step hints, but it never hands over the answer early.
 
 :::tip What is MCP, in one sentence?
 MCP is an open standard that lets an AI application (the *host*) discover and call *tools* in another program (the *server*) through a common JSON-RPC message format. Think of it as a USB-C port for AI apps. Read [How MCP works](./explanation/how-mcp-works.md) for the full picture.
@@ -22,19 +22,26 @@ MCP is an open standard that lets an AI application (the *host*) discover and ca
 
 | Capability | Name | What it does |
 | --- | --- | --- |
-| Tool | [`generate_problem`](./reference/tools.md#generate_problem) | Creates a problem for a topic, grade and difficulty. Returns the question, never the answer. |
-| Tool | [`check_answer`](./reference/tools.md#check_answer) | Marks an attempt and gives targeted feedback, for example "check your signs". |
+| Tool | [`generate_problem`](./reference/tools.md#generate_problem) | Creates a CAT-style problem for a topic and difficulty. Returns the question, never the answer. |
+| Tool | [`check_answer`](./reference/tools.md#check_answer) | Marks an attempt and gives targeted feedback, for example "the gain % is worked out on the cost price". |
 | Tool | [`get_hint`](./reference/tools.md#get_hint) | Gives a hint at level 1, 2 or 3. Hints never state the final answer. |
-| Resource | [`syllabus://topics`](./reference/resources-and-prompts.md#syllabustopics) | Lists every topic and the grades it is offered for. |
-| Resource template | [`syllabus://grade/{grade}`](./reference/resources-and-prompts.md#syllabusgradegrade) | Lists the topics for one grade. |
+| Resource | [`syllabus://topics`](./reference/resources-and-prompts.md#syllabustopics) | Lists every topic with its exam section and area. |
+| Resource template | [`syllabus://section/{section}`](./reference/resources-and-prompts.md#syllabussectionsection) | Lists the topics in one section: `quant` or `reasoning`. |
 | Prompt | [`socratic_tutor`](./reference/resources-and-prompts.md#socratic_tutor) | A ready-made tutoring session that asks guiding questions. |
 
-Topics: **linear equations** (Class 6–10), **fractions** (Class 6–8), **percentages** (Class 6–10) and **quadratic equations** (Class 9–10), each at easy, medium and hard difficulty.
+Topics, each at easy, medium and hard difficulty:
+
+| Section | Area | Topics |
+| --- | --- | --- |
+| Quant | Arithmetic | percentages, profit and loss, ratio and proportion, time-speed-distance, time and work, simple and compound interest |
+| Quant | Algebra | linear equations, quadratic equations |
+| Quant | Number system | HCF and LCM, units digits, counting factors |
+| Reasoning | Logical reasoning | number series |
 
 ## Who these docs are for
 
 - **Developers** who want to learn MCP by reading a small, complete, tested server.
-- **Teachers and EdTech builders** who want an AI assistant that supports learning instead of replacing it.
+- **Coaching teachers and EdTech builders** who want an AI assistant that supports exam preparation instead of replacing the student's own thinking.
 - **Anyone evaluating MCP**, who wants real request and response examples rather than pseudo-code.
 
 ## How these docs are organised

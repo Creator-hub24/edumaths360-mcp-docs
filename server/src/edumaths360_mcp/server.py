@@ -1,7 +1,8 @@
 """Edumaths360 Practice Server.
 
-An MCP server that lets an AI assistant run maths practice for Class 6-10
-students without doing the thinking for them.
+An MCP server that lets an AI assistant run quantitative aptitude and
+reasoning practice for CAT, MBA and other competitive-exam aspirants without
+doing the thinking for them.
 
 Run it with ``edumaths360-mcp`` (or ``python -m edumaths360_mcp``). It speaks
 MCP over stdio, so stdout is reserved for protocol messages: all logging goes
@@ -26,13 +27,15 @@ from pydantic import BaseModel, Field
 from edumaths360_mcp import __version__
 from edumaths360_mcp.problems import (
     DIFFICULTIES,
-    MAX_GRADE,
     MAX_HINT_LEVEL,
     MAX_SEED,
-    MIN_GRADE,
     PROBLEM_ID_PATTERN,
+    SECTION_DESCRIPTIONS,
+    SECTIONS,
+    TOPIC_AREAS,
     TOPIC_DESCRIPTIONS,
-    TOPIC_GRADES,
+    TOPIC_LABELS,
+    TOPIC_SECTIONS,
     TOPICS,
     Difficulty,
     ProblemError,
@@ -40,6 +43,7 @@ from edumaths360_mcp.problems import (
     check,
     generate,
     problem_from_id,
+    topics_in_section,
 )
 
 logger = logging.getLogger("edumaths360_mcp")
@@ -54,7 +58,8 @@ mcp = MCPServer(
     title="Edumaths360 Practice Server",
     version=__version__,
     instructions=(
-        "Maths practice for Class 6-10 students. Use generate_problem to create a problem, "
+        "Quantitative aptitude and reasoning practice for CAT, MBA and other competitive-exam aspirants. "
+        "Use generate_problem to create a problem, "
         "let the student attempt it, and use check_answer to mark it. If the student is stuck, "
         "call get_hint with level 1 first and only move to higher levels if they are still stuck. "
         "Do not solve the problem for the student yourself."
@@ -69,10 +74,10 @@ class GeneratedProblem(BaseModel):
     """A new practice problem. The answer is deliberately not included."""
 
     problem_id: str = Field(description="Stable ID. Pass it to check_answer and get_hint.")
+    section: str = Field(description="Exam section: 'quant' or 'reasoning'.")
     topic: str
-    grade: int
     difficulty: str
-    seed: int = Field(description="Seed used. The same topic, grade, difficulty and seed give the same problem.")
+    seed: int = Field(description="Seed used. The same topic, difficulty and seed give the same problem.")
     statement: str = Field(description="The question to show the student.")
     answer_format: str = Field(description="How the student should write their answer.")
     max_hint_level: int
@@ -131,8 +136,9 @@ attempts = AttemptTracker()
 # ------------------------------------------------------------------- tools
 
 GENERATE_PROBLEM_DESCRIPTION = (
-    "Create a maths practice problem for a Class 6-10 student. Returns the problem statement and a "
-    "problem_id, but never the answer. Show the statement to the student and let them attempt it."
+    "Create a CAT-style quantitative aptitude or reasoning practice problem. Returns the problem "
+    "statement and a problem_id, but never the answer. Show the statement to the student and let them "
+    "attempt it."
 )
 CHECK_ANSWER_DESCRIPTION = (
     "Mark a student's answer and give feedback. A wrong answer never reveals the correct one on the "
@@ -151,11 +157,7 @@ GET_HINT_DESCRIPTION = (
     annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
 )
 def generate_problem(
-    topic: Annotated[Topic, Field(description="Maths topic to practise.")],
-    grade: Annotated[
-        int,
-        Field(ge=MIN_GRADE, le=MAX_GRADE, description="Student's class (grade), 6 to 10."),
-    ],
+    topic: Annotated[Topic, Field(description="Quant or reasoning topic to practise.")],
     difficulty: Annotated[Difficulty, Field(description="How challenging the problem should be.")] = "medium",
     seed: Annotated[
         int | None,
@@ -169,14 +171,14 @@ def generate_problem(
     if seed is None:
         seed = secrets.randbelow(MAX_SEED + 1)
     try:
-        problem = generate(topic, grade, difficulty, seed)
+        problem = generate(topic, difficulty, seed)
     except ProblemError as exc:
         raise ToolError(str(exc)) from exc
     logger.info("generated %s", problem.id)
     return GeneratedProblem(
         problem_id=problem.id,
+        section=problem.section,
         topic=problem.topic,
-        grade=problem.grade,
         difficulty=problem.difficulty,
         seed=problem.seed,
         statement=problem.statement,
@@ -204,7 +206,7 @@ def check_answer(
         Field(
             min_length=1,
             max_length=100,
-            description="The student's answer, e.g. '7', 'x = -3', '5/14', '2, -5'.",
+            description="The student's answer, for example '1300', 'Rs 1,300', '37.5', 'x = -3', '2, -5'.",
         ),
     ],
 ) -> AnswerCheck:
@@ -278,75 +280,72 @@ def get_hint(
 # --------------------------------------------------------------- resources
 
 
-def _grade_syllabus(grade: int) -> dict:
+def _topic_entry(topic: str) -> dict:
     return {
-        "grade": grade,
-        "topics": [
-            {
-                "topic": t,
-                "description": TOPIC_DESCRIPTIONS[t],
-                "difficulties": list(DIFFICULTIES),
-            }
-            for t in TOPICS
-            if grade in TOPIC_GRADES[t]
-        ],
+        "topic": topic,
+        "section": TOPIC_SECTIONS[topic],
+        "area": TOPIC_AREAS[topic],
+        "description": TOPIC_DESCRIPTIONS[topic],
+        "difficulties": list(DIFFICULTIES),
     }
 
 
 @mcp.resource(
     "syllabus://topics",
     title="All topics",
-    description="Every topic the server can generate, with the grades it is offered for.",
+    description="Every topic the server can generate, grouped by exam section (quant or reasoning).",
     mime_type="application/json",
 )
 def all_topics() -> str:
-    data = [
-        {
-            "topic": t,
-            "description": TOPIC_DESCRIPTIONS[t],
-            "grades": list(TOPIC_GRADES[t]),
-        }
-        for t in TOPICS
-    ]
-    return json.dumps({"topics": data}, indent=2)
+    return json.dumps({"topics": [_topic_entry(t) for t in TOPICS]}, indent=2)
 
 
 @mcp.resource(
-    "syllabus://grade/{grade}",
-    title="Syllabus for one grade",
-    description="Topics and difficulty levels available for a Class 6-10 grade.",
+    "syllabus://section/{section}",
+    title="Syllabus for one exam section",
+    description="Topics and difficulty levels in one section: 'quant' or 'reasoning'.",
     mime_type="application/json",
 )
-def grade_syllabus(grade: str) -> str:
-    if not grade.isdigit() or not MIN_GRADE <= int(grade) <= MAX_GRADE:
-        raise ResourceNotFoundError(f"No syllabus for grade '{grade}'. Use a grade from {MIN_GRADE} to {MAX_GRADE}.")
-    return json.dumps(_grade_syllabus(int(grade)), indent=2)
+def section_syllabus(section: str) -> str:
+    if section not in SECTIONS:
+        raise ResourceNotFoundError(f"No syllabus for section '{section}'. Use one of: {', '.join(SECTIONS)}.")
+    data = {
+        "section": section,
+        "description": SECTION_DESCRIPTIONS[section],
+        "topics": [_topic_entry(t) for t in topics_in_section(section)],
+    }
+    return json.dumps(data, indent=2)
 
 
 # ----------------------------------------------------------------- prompts
 
 
 @mcp.prompt(
-    title="Socratic maths tutor",
-    description="Run a practice session where the assistant asks guiding questions instead of giving answers.",
+    title="Socratic quant tutor",
+    description=(
+        "Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers."
+    ),
 )
-def socratic_tutor(topic: str = "linear_equations", grade: str = "8") -> str:
+def socratic_tutor(topic: str = "percentages", difficulty: str = "medium") -> str:
     # Prompt arguments are free text from the client. Validate them before they
     # are pasted into instructions for the model (prompt-injection defence).
     if topic not in TOPICS:
         raise MCPError(INVALID_PARAMS, f"Unknown topic '{topic}'. Choose one of: {', '.join(TOPICS)}.")
-    if not grade.isdigit() or int(grade) not in TOPIC_GRADES[topic]:
-        raise MCPError(INVALID_PARAMS, f"'{topic}' is offered for grades {list(TOPIC_GRADES[topic])}; got '{grade}'.")
+    if difficulty not in DIFFICULTIES:
+        raise MCPError(INVALID_PARAMS, f"Unknown difficulty '{difficulty}'. Choose one of: {', '.join(DIFFICULTIES)}.")
     return (
-        f"You are a patient maths tutor for a Class {grade} student practising {topic.replace('_', ' ')}.\n\n"
+        "You are a patient quantitative aptitude and reasoning coach for a CAT/MBA aspirant practising "
+        f"{TOPIC_LABELS[topic]} at {difficulty} difficulty.\n\n"
         "Rules:\n"
-        f"1. Call generate_problem with topic='{topic}' and grade={grade}, then show the student the statement.\n"
+        f"1. Call generate_problem with topic='{topic}' and difficulty='{difficulty}', then show the "
+        "student the statement.\n"
         "2. Never solve the problem for the student and never state the final answer yourself.\n"
-        "3. Ask one short guiding question at a time, for example 'What operation undoes + 7?'.\n"
+        "3. Ask one short guiding question at a time, for example 'What is the cost price here?'.\n"
         "4. When the student gives an answer, call check_answer and share the feedback in your own words.\n"
         "5. If the student is stuck, call get_hint starting at level 1. Only go to the next level "
         "if they are still stuck after trying.\n"
-        "6. Praise effort and method, not only correct answers.\n\n"
+        "6. Praise method and reasoning, not only correct answers. Once they are correct, ask whether a "
+        "faster approach (a shortcut or an elimination trick) would also work, as it would in the exam.\n\n"
         "Start by greeting the student and generating the first problem."
     )
 

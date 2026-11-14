@@ -70,9 +70,8 @@ def main() -> None:
         {
             "name": "generate_problem",
             "arguments": {
-                "topic": "linear_equations",
-                "grade": 8,
-                "difficulty": "medium",
+                "topic": "profit_loss",
+                "difficulty": "hard",
                 "seed": 42,
             },
         },
@@ -82,15 +81,15 @@ def main() -> None:
         "tools/call",
         {
             "name": "check_answer",
-            "arguments": {"problem_id": "lin-g8-medium-42", "answer": "x = -14"},
+            "arguments": {"problem_id": "pl-hard-42", "answer": "1040"},
         },
-        title="5. Check a wrong answer (sign error)",
+        title="5. Check a wrong answer (percentage of the wrong base)",
     )
     send(
         "tools/call",
         {
             "name": "get_hint",
-            "arguments": {"problem_id": "lin-g8-medium-42", "level": 2},
+            "arguments": {"problem_id": "pl-hard-42", "level": 2},
         },
         title="6. Ask for a level 2 hint",
     )
@@ -98,25 +97,25 @@ def main() -> None:
         "tools/call",
         {
             "name": "check_answer",
-            "arguments": {"problem_id": "lin-g8-medium-42", "answer": "14"},
+            "arguments": {"problem_id": "pl-hard-42", "answer": "Rs 1,300"},
         },
         title="7. Check the correct answer",
     )
     send(
         "tools/call",
-        {"name": "generate_problem", "arguments": {"topic": "quadratics", "grade": 7}},
-        title="8. Tool error: topic not offered for the grade",
+        {"name": "check_answer", "arguments": {"problem_id": "pl-hard-42", "answer": "no idea"}},
+        title="8. Tool error: answer without a number",
     )
     send("resources/list", {}, title="9. List static resources")
     send("resources/templates/list", {}, title="10. List resource templates")
-    send("resources/read", {"uri": "syllabus://grade/9"}, title="11. Read a resource")
+    send("resources/read", {"uri": "syllabus://section/quant"}, title="11. Read a resource")
     send("prompts/list", {}, title="12. List prompts")
     send(
         "prompts/get",
-        {"name": "socratic_tutor", "arguments": {"topic": "fractions", "grade": "7"}},
+        {"name": "socratic_tutor", "arguments": {"topic": "time_work", "difficulty": "hard"}},
         title="13. Get a prompt",
     )
-    send("resources/read", {"uri": "syllabus://grade/12"}, title="14. Protocol error: resource not found")
+    send("resources/read", {"uri": "syllabus://section/varc"}, title="14. Protocol error: resource not found")
     send("tools/unknown_method", {}, title="15. Protocol error: unknown method")
 
     proc.stdin.close()

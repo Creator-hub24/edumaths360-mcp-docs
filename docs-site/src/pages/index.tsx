@@ -32,7 +32,7 @@ const CARDS: Card[] = [
     kind: 'Explanation',
     title: 'Why hints come in levels',
     to: '/docs/explanation/hint-pedagogy',
-    description: 'How classroom teaching shaped the design: graduated hints and feedback that names the mistake.',
+    description: 'How teaching CAT aspirants shaped the design: graduated hints and feedback that names the mistake.',
   },
 ];
 
@@ -54,11 +54,11 @@ export default function Home(): ReactNode {
         <div className="container">
           <p className={styles.eyebrow}>Edumaths360 · Docs as Code</p>
           <Heading as="h1" className={styles.title}>
-            Give AI assistants the tools of a good maths tutor
+            Give AI assistants the tools of a good quant and reasoning coach
           </Heading>
           <p className={styles.subtitle}>
-            An open-source <strong>Model Context Protocol</strong> server that generates Class 6–10 practice
-            problems, checks answers and gives graduated hints, without handing over the answer. Documented
+            An open-source <strong>Model Context Protocol</strong> server that generates CAT-style quantitative aptitude
+            and reasoning problems, checks answers and gives graduated hints, without handing over the answer. Documented
             end to end, with the code examples tested in CI.
           </p>
           <div className={styles.buttons}>
@@ -107,7 +107,7 @@ export default function Home(): ReactNode {
                     <code>get_hint</code>
                   </li>
                   <li>
-                    <strong>2 resources:</strong> the syllabus, overall and per class
+                    <strong>2 resources:</strong> the syllabus, overall and per exam section
                   </li>
                   <li>
                     <strong>1 prompt:</strong> a Socratic tutor that asks before it tells

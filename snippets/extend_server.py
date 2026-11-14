@@ -39,18 +39,17 @@ class Worksheet(BaseModel):
     annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
 )
 def make_worksheet(
-    topic: Annotated[Topic, Field(description="Maths topic to practise.")],
-    grade: Annotated[int, Field(ge=6, le=10, description="Student's class (grade), 6 to 10.")],
+    topic: Annotated[Topic, Field(description="Quant or reasoning topic to practise.")],
     difficulty: Annotated[Difficulty, Field(description="How challenging the problems should be.")] = "easy",
     count: Annotated[int, Field(ge=1, le=10, description="Number of problems, 1 to 10.")] = 5,
     first_seed: Annotated[int, Field(ge=0, le=MAX_SEED - 10, description="Seed of the first problem.")] = 1,
 ) -> Worksheet:
     try:
-        problems = [generate(topic, grade, difficulty, first_seed + i) for i in range(count)]
+        problems = [generate(topic, difficulty, first_seed + i) for i in range(count)]
     except ProblemError as exc:
         raise ToolError(str(exc)) from exc
     return Worksheet(
-        title=f"Class {grade} {topic.replace('_', ' ')} ({difficulty})",
+        title=f"{topic.replace('_', ' ').capitalize()} practice set ({difficulty})",
         items=[WorksheetItem(problem_id=p.id, statement=p.statement) for p in problems],
     )
 

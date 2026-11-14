@@ -25,7 +25,7 @@ npx @modelcontextprotocol/inspector uv --directory server run edumaths360-mcp
 The Inspector starts the server and prints a local URL. Open it in your browser. The layout differs slightly between Inspector versions, but the workflow is the same:
 
 1. Connect to the server. The server name and version appear.
-2. Open the **Tools** view and list the tools. Select `generate_problem`, fill in `topic` and `grade`, and run it.
+2. Open the **Tools** view and list the tools. Select `generate_problem`, fill in `topic` (for example `time_speed_distance`) and, optionally, `difficulty`, and run it.
 3. Copy the `problem_id` from the result, then run `check_answer` with a wrong answer to see the feedback.
 4. Open the **Resources** and **Prompts** views to read `syllabus://topics` or render `socratic_tutor`.
 5. Check the Inspector's history and notifications panes to see each request and response.
@@ -45,7 +45,7 @@ npx @modelcontextprotocol/inspector --cli uv --directory server run edumaths360-
 ```bash
 npx @modelcontextprotocol/inspector --cli uv --directory server run edumaths360-mcp \
   --method tools/call --tool-name get_hint \
-  --tool-arg problem_id=lin-g8-medium-42 --tool-arg level=1
+  --tool-arg problem_id=pl-hard-42 --tool-arg level=1
 ```
 
 ```json
@@ -53,14 +53,14 @@ npx @modelcontextprotocol/inspector --cli uv --directory server run edumaths360-
   "content": [
     {
       "type": "text",
-      "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"level\": 1,\n  \"max_level\": 3,\n  \"hint\": \"Undo the operations in reverse order: deal with the number added or subtracted first, then the multiplication.\",\n  \"next_step\": \"Try the problem again. If still stuck, ask for level 2.\"\n}"
+      "text": "{\n  \"problem_id\": \"pl-hard-42\",\n  \"level\": 1,\n  \"max_level\": 3,\n  \"hint\": \"Find the cost price first. A loss of 20% means Rs 800 is 80% of the cost price.\",\n  \"next_step\": \"Try the problem again. If still stuck, ask for level 2.\"\n}"
     }
   ],
   "structuredContent": {
-    "problem_id": "lin-g8-medium-42",
+    "problem_id": "pl-hard-42",
     "level": 1,
     "max_level": 3,
-    "hint": "Undo the operations in reverse order: deal with the number added or subtracted first, then the multiplication.",
+    "hint": "Find the cost price first. A loss of 20% means Rs 800 is 80% of the cost price.",
     "next_step": "Try the problem again. If still stuck, ask for level 2."
   },
   "isError": false
@@ -78,7 +78,7 @@ npx @modelcontextprotocol/inspector --cli uv --directory server run edumaths360-
 
 ```bash
 npx @modelcontextprotocol/inspector --cli uv --directory server run edumaths360-mcp \
-  --method prompts/get --prompt-name socratic_tutor --prompt-args topic=fractions grade=7
+  --method prompts/get --prompt-name socratic_tutor --prompt-args topic=time_work difficulty=hard
 ```
 
 ## Reading what you see

@@ -33,12 +33,12 @@
               "listChanged": false
             }
           },
-          "instructions": "Maths practice for Class 6-10 students. Use generate_problem to create a problem, let the student attempt it, and use check_answer to mark it. If the student is stuck, call get_hint with level 1 first and only move to higher levels if they are still stuck. Do not solve the problem for the student yourself.",
+          "instructions": "Quantitative aptitude and reasoning practice for CAT, MBA and other competitive-exam aspirants. Use generate_problem to create a problem, let the student attempt it, and use check_answer to mark it. If the student is stuck, call get_hint with level 1 first and only move to higher levels if they are still stuck. Do not solve the problem for the student yourself.",
           "protocolVersion": "2025-11-25",
           "serverInfo": {
             "name": "edumaths360-practice",
             "title": "Edumaths360 Practice Server",
-            "version": "0.1.0"
+            "version": "0.2.0"
           }
         }
       }
@@ -70,26 +70,25 @@
                 "openWorldHint": false,
                 "readOnlyHint": true
               },
-              "description": "Create a maths practice problem for a Class 6-10 student. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.",
+              "description": "Create a CAT-style quantitative aptitude or reasoning practice problem. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.",
               "inputSchema": {
                 "properties": {
                   "topic": {
-                    "description": "Maths topic to practise.",
+                    "description": "Quant or reasoning topic to practise.",
                     "enum": [
-                      "linear_equations",
-                      "fractions",
                       "percentages",
-                      "quadratics"
+                      "profit_loss",
+                      "ratio_proportion",
+                      "time_speed_distance",
+                      "time_work",
+                      "interest",
+                      "linear_equations",
+                      "quadratics",
+                      "number_system",
+                      "number_series"
                     ],
                     "title": "Topic",
                     "type": "string"
-                  },
-                  "grade": {
-                    "description": "Student's class (grade), 6 to 10.",
-                    "maximum": 10,
-                    "minimum": 6,
-                    "title": "Grade",
-                    "type": "integer"
                   },
                   "difficulty": {
                     "default": "medium",
@@ -119,8 +118,7 @@
                   }
                 },
                 "required": [
-                  "topic",
-                  "grade"
+                  "topic"
                 ],
                 "type": "object",
                 "title": "generate_problemArguments"
@@ -133,20 +131,21 @@
                     "title": "Problem Id",
                     "type": "string"
                   },
+                  "section": {
+                    "description": "Exam section: 'quant' or 'reasoning'.",
+                    "title": "Section",
+                    "type": "string"
+                  },
                   "topic": {
                     "title": "Topic",
                     "type": "string"
-                  },
-                  "grade": {
-                    "title": "Grade",
-                    "type": "integer"
                   },
                   "difficulty": {
                     "title": "Difficulty",
                     "type": "string"
                   },
                   "seed": {
-                    "description": "Seed used. The same topic, grade, difficulty and seed give the same problem.",
+                    "description": "Seed used. The same topic, difficulty and seed give the same problem.",
                     "title": "Seed",
                     "type": "integer"
                   },
@@ -167,8 +166,8 @@
                 },
                 "required": [
                   "problem_id",
+                  "section",
                   "topic",
-                  "grade",
                   "difficulty",
                   "seed",
                   "statement",
@@ -193,12 +192,12 @@
                   "problem_id": {
                     "description": "ID returned by generate_problem.",
                     "maxLength": 32,
-                    "pattern": "^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\\d{1,6})$",
+                    "pattern": "^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\\d{1,6})$",
                     "title": "Problem Id",
                     "type": "string"
                   },
                   "answer": {
-                    "description": "The student's answer, e.g. '7', 'x = -3', '5/14', '2, -5'.",
+                    "description": "The student's answer, for example '1300', 'Rs 1,300', '37.5', 'x = -3', '2, -5'.",
                     "maxLength": 100,
                     "minLength": 1,
                     "title": "Answer",
@@ -271,7 +270,7 @@
                   "problem_id": {
                     "description": "ID returned by generate_problem.",
                     "maxLength": 32,
-                    "pattern": "^(lin|frac|pct|quad)-g([6-9]|10)-(easy|medium|hard)-(\\d{1,6})$",
+                    "pattern": "^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\\d{1,6})$",
                     "title": "Problem Id",
                     "type": "string"
                   },
@@ -340,9 +339,8 @@
         "params": {
           "name": "generate_problem",
           "arguments": {
-            "topic": "linear_equations",
-            "grade": 8,
-            "difficulty": "medium",
+            "topic": "profit_loss",
+            "difficulty": "hard",
             "seed": 42
           }
         }
@@ -353,26 +351,26 @@
         "result": {
           "content": [
             {
-              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"topic\": \"linear_equations\",\n  \"grade\": 8,\n  \"difficulty\": \"medium\",\n  \"seed\": 42,\n  \"statement\": \"Solve for x: 7x + 7 = 105\",\n  \"answer_format\": \"a whole number, for example 7 or -3\",\n  \"max_hint_level\": 3\n}",
+              "text": "{\n  \"problem_id\": \"pl-hard-42\",\n  \"section\": \"quant\",\n  \"topic\": \"profit_loss\",\n  \"difficulty\": \"hard\",\n  \"seed\": 42,\n  \"statement\": \"By selling an article for Rs 800, a trader loses 20%. At what price, in rupees, should he sell it to gain 30%?\",\n  \"answer_format\": \"a number, for example 450 (no units, % or Rs sign needed)\",\n  \"max_hint_level\": 3\n}",
               "type": "text"
             }
           ],
           "isError": false,
           "structuredContent": {
-            "problem_id": "lin-g8-medium-42",
-            "topic": "linear_equations",
-            "grade": 8,
-            "difficulty": "medium",
+            "problem_id": "pl-hard-42",
+            "section": "quant",
+            "topic": "profit_loss",
+            "difficulty": "hard",
             "seed": 42,
-            "statement": "Solve for x: 7x + 7 = 105",
-            "answer_format": "a whole number, for example 7 or -3",
+            "statement": "By selling an article for Rs 800, a trader loses 20%. At what price, in rupees, should he sell it to gain 30%?",
+            "answer_format": "a number, for example 450 (no units, % or Rs sign needed)",
             "max_hint_level": 3
           }
         }
       }
     },
     {
-      "title": "5. Check a wrong answer (sign error)",
+      "title": "5. Check a wrong answer (percentage of the wrong base)",
       "request": {
         "jsonrpc": "2.0",
         "method": "tools/call",
@@ -380,8 +378,8 @@
         "params": {
           "name": "check_answer",
           "arguments": {
-            "problem_id": "lin-g8-medium-42",
-            "answer": "x = -14"
+            "problem_id": "pl-hard-42",
+            "answer": "1040"
           }
         }
       },
@@ -391,16 +389,16 @@
         "result": {
           "content": [
             {
-              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"correct\": false,\n  \"attempt\": 1,\n  \"feedback\": \"Check your signs: you have the right size of number but the wrong sign.\",\n  \"solution\": null\n}",
+              "text": "{\n  \"problem_id\": \"pl-hard-42\",\n  \"correct\": false,\n  \"attempt\": 1,\n  \"feedback\": \"The gain % is worked out on the cost price, not on the old selling price.\",\n  \"solution\": null\n}",
               "type": "text"
             }
           ],
           "isError": false,
           "structuredContent": {
-            "problem_id": "lin-g8-medium-42",
+            "problem_id": "pl-hard-42",
             "correct": false,
             "attempt": 1,
-            "feedback": "Check your signs: you have the right size of number but the wrong sign.",
+            "feedback": "The gain % is worked out on the cost price, not on the old selling price.",
             "solution": null
           }
         }
@@ -415,7 +413,7 @@
         "params": {
           "name": "get_hint",
           "arguments": {
-            "problem_id": "lin-g8-medium-42",
+            "problem_id": "pl-hard-42",
             "level": 2
           }
         }
@@ -426,16 +424,16 @@
         "result": {
           "content": [
             {
-              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"level\": 2,\n  \"max_level\": 3,\n  \"hint\": \"Subtract 7 from both sides. You should get 7x = 98.\",\n  \"next_step\": \"Try the problem again. If still stuck, ask for level 3.\"\n}",
+              "text": "{\n  \"problem_id\": \"pl-hard-42\",\n  \"level\": 2,\n  \"max_level\": 3,\n  \"hint\": \"To get the cost price, divide Rs 800 by 80 and multiply by 100.\",\n  \"next_step\": \"Try the problem again. If still stuck, ask for level 3.\"\n}",
               "type": "text"
             }
           ],
           "isError": false,
           "structuredContent": {
-            "problem_id": "lin-g8-medium-42",
+            "problem_id": "pl-hard-42",
             "level": 2,
             "max_level": 3,
-            "hint": "Subtract 7 from both sides. You should get 7x = 98.",
+            "hint": "To get the cost price, divide Rs 800 by 80 and multiply by 100.",
             "next_step": "Try the problem again. If still stuck, ask for level 3."
           }
         }
@@ -450,8 +448,8 @@
         "params": {
           "name": "check_answer",
           "arguments": {
-            "problem_id": "lin-g8-medium-42",
-            "answer": "14"
+            "problem_id": "pl-hard-42",
+            "answer": "Rs 1,300"
           }
         }
       },
@@ -461,32 +459,32 @@
         "result": {
           "content": [
             {
-              "text": "{\n  \"problem_id\": \"lin-g8-medium-42\",\n  \"correct\": true,\n  \"attempt\": 2,\n  \"feedback\": \"Correct! Well done.\",\n  \"solution\": \"7x + 7 = 105  →  7x = 98  →  x = 98 ÷ 7 = 14\"\n}",
+              "text": "{\n  \"problem_id\": \"pl-hard-42\",\n  \"correct\": true,\n  \"attempt\": 2,\n  \"feedback\": \"Correct! Well done. Now try to solve the next one faster.\",\n  \"solution\": \"CP = 800 × 100/80 = 1000  →  new SP = 1000 × 130/100 = 1300\"\n}",
               "type": "text"
             }
           ],
           "isError": false,
           "structuredContent": {
-            "problem_id": "lin-g8-medium-42",
+            "problem_id": "pl-hard-42",
             "correct": true,
             "attempt": 2,
-            "feedback": "Correct! Well done.",
-            "solution": "7x + 7 = 105  →  7x = 98  →  x = 98 ÷ 7 = 14"
+            "feedback": "Correct! Well done. Now try to solve the next one faster.",
+            "solution": "CP = 800 × 100/80 = 1000  →  new SP = 1000 × 130/100 = 1300"
           }
         }
       }
     },
     {
-      "title": "8. Tool error: topic not offered for the grade",
+      "title": "8. Tool error: answer without a number",
       "request": {
         "jsonrpc": "2.0",
         "method": "tools/call",
         "id": 7,
         "params": {
-          "name": "generate_problem",
+          "name": "check_answer",
           "arguments": {
-            "topic": "quadratics",
-            "grade": 7
+            "problem_id": "pl-hard-42",
+            "answer": "no idea"
           }
         }
       },
@@ -496,7 +494,7 @@
         "result": {
           "content": [
             {
-              "text": "Error executing tool generate_problem: 'quadratics' is not offered for Class 7. Topics for Class 7: linear_equations, fractions, percentages.",
+              "text": "Error executing tool check_answer: I could not find a number in that answer. Expected format: a number, for example 450 (no units, % or Rs sign needed).",
               "type": "text"
             }
           ],
@@ -518,7 +516,7 @@
         "result": {
           "resources": [
             {
-              "description": "Every topic the server can generate, with the grades it is offered for.",
+              "description": "Every topic the server can generate, grouped by exam section (quant or reasoning).",
               "mimeType": "application/json",
               "name": "all_topics",
               "title": "All topics",
@@ -542,11 +540,11 @@
         "result": {
           "resourceTemplates": [
             {
-              "description": "Topics and difficulty levels available for a Class 6-10 grade.",
+              "description": "Topics and difficulty levels in one section: 'quant' or 'reasoning'.",
               "mimeType": "application/json",
-              "name": "grade_syllabus",
-              "title": "Syllabus for one grade",
-              "uriTemplate": "syllabus://grade/{grade}"
+              "name": "section_syllabus",
+              "title": "Syllabus for one exam section",
+              "uriTemplate": "syllabus://section/{section}"
             }
           ]
         }
@@ -559,7 +557,7 @@
         "method": "resources/read",
         "id": 10,
         "params": {
-          "uri": "syllabus://grade/9"
+          "uri": "syllabus://section/quant"
         }
       },
       "response": {
@@ -569,8 +567,8 @@
           "contents": [
             {
               "mimeType": "application/json",
-              "text": "{\n  \"grade\": 9,\n  \"topics\": [\n    {\n      \"topic\": \"linear_equations\",\n      \"description\": \"Solve equations in one variable, from x + b = c up to brackets on both sides.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"percentages\",\n      \"description\": \"Percentage of an amount, percentage increase/decrease, and reverse percentages.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"quadratics\",\n      \"description\": \"Solve quadratic equations by factorisation.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    }\n  ]\n}",
-              "uri": "syllabus://grade/9"
+              "text": "{\n  \"section\": \"quant\",\n  \"description\": \"Quantitative aptitude: arithmetic, algebra and number system.\",\n  \"topics\": [\n    {\n      \"topic\": \"percentages\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Percentage of a quantity, successive percentage change, and price-consumption problems.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"profit_loss\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Cost price, selling price, marked price and discount, and profit or loss percentages.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"ratio_proportion\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Dividing in a ratio, combining ratios, and mixtures.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"time_speed_distance\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Trains, unit conversion, average speed and relative speed.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"time_work\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Working together, finding one person's rate, and pipes and cisterns.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"interest\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Simple interest, compound interest, and the CI - SI difference.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"linear_equations\",\n      \"section\": \"quant\",\n      \"area\": \"algebra\",\n      \"description\": \"Word problems and pairs of linear equations in two variables.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"quadratics\",\n      \"section\": \"quant\",\n      \"area\": \"algebra\",\n      \"description\": \"Solve quadratic equations by factorisation.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"number_system\",\n      \"section\": \"quant\",\n      \"area\": \"number system\",\n      \"description\": \"HCF and LCM, units digits of powers, and counting factors.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    }\n  ]\n}",
+              "uri": "syllabus://section/quant"
             }
           ]
         }
@@ -596,13 +594,13 @@
                   "required": false
                 },
                 {
-                  "name": "grade",
+                  "name": "difficulty",
                   "required": false
                 }
               ],
-              "description": "Run a practice session where the assistant asks guiding questions instead of giving answers.",
+              "description": "Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers.",
               "name": "socratic_tutor",
-              "title": "Socratic maths tutor"
+              "title": "Socratic quant tutor"
             }
           ]
         }
@@ -617,8 +615,8 @@
         "params": {
           "name": "socratic_tutor",
           "arguments": {
-            "topic": "fractions",
-            "grade": "7"
+            "topic": "time_work",
+            "difficulty": "hard"
           }
         }
       },
@@ -626,11 +624,11 @@
         "jsonrpc": "2.0",
         "id": 12,
         "result": {
-          "description": "Run a practice session where the assistant asks guiding questions instead of giving answers.",
+          "description": "Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers.",
           "messages": [
             {
               "content": {
-                "text": "You are a patient maths tutor for a Class 7 student practising fractions.\n\nRules:\n1. Call generate_problem with topic='fractions' and grade=7, then show the student the statement.\n2. Never solve the problem for the student and never state the final answer yourself.\n3. Ask one short guiding question at a time, for example 'What operation undoes + 7?'.\n4. When the student gives an answer, call check_answer and share the feedback in your own words.\n5. If the student is stuck, call get_hint starting at level 1. Only go to the next level if they are still stuck after trying.\n6. Praise effort and method, not only correct answers.\n\nStart by greeting the student and generating the first problem.",
+                "text": "You are a patient quantitative aptitude and reasoning coach for a CAT/MBA aspirant practising time and work at hard difficulty.\n\nRules:\n1. Call generate_problem with topic='time_work' and difficulty='hard', then show the student the statement.\n2. Never solve the problem for the student and never state the final answer yourself.\n3. Ask one short guiding question at a time, for example 'What is the cost price here?'.\n4. When the student gives an answer, call check_answer and share the feedback in your own words.\n5. If the student is stuck, call get_hint starting at level 1. Only go to the next level if they are still stuck after trying.\n6. Praise method and reasoning, not only correct answers. Once they are correct, ask whether a faster approach (a shortcut or an elimination trick) would also work, as it would in the exam.\n\nStart by greeting the student and generating the first problem.",
                 "type": "text"
               },
               "role": "user"
@@ -646,7 +644,7 @@
         "method": "resources/read",
         "id": 13,
         "params": {
-          "uri": "syllabus://grade/12"
+          "uri": "syllabus://section/varc"
         }
       },
       "response": {
@@ -654,9 +652,9 @@
         "id": 13,
         "error": {
           "code": -32602,
-          "message": "No syllabus for grade '12'. Use a grade from 6 to 10.",
+          "message": "No syllabus for section 'varc'. Use one of: quant, reasoning.",
           "data": {
-            "uri": "syllabus://grade/12"
+            "uri": "syllabus://section/varc"
           }
         }
       }
