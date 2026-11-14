@@ -122,6 +122,7 @@ async def test_resources():
         assert [t.uri_template for t in templates] == ["syllabus://section/{section}"]
         quant = json.loads((await client.read_resource("syllabus://section/quant")).contents[0].text)
         reasoning = json.loads((await client.read_resource("syllabus://section/reasoning")).contents[0].text)
+        varc = json.loads((await client.read_resource("syllabus://section/varc")).contents[0].text)
         topics = json.loads((await client.read_resource("syllabus://topics")).contents[0].text)
     assert [t["topic"] for t in quant["topics"]] == [
         "percentages",
@@ -135,14 +136,15 @@ async def test_resources():
         "number_system",
     ]
     assert [t["topic"] for t in reasoning["topics"]] == ["number_series"]
-    assert len(topics["topics"]) == 10
+    assert [t["topic"] for t in varc["topics"]] == ["para_jumbles", "odd_sentence_out", "para_summary"]
+    assert len(topics["topics"]) == 13
     assert all(t["difficulties"] == ["easy", "medium", "hard"] for t in topics["topics"])
 
 
 async def test_unknown_section_resource_is_an_error():
     async with Client(mcp) as client:
         with pytest.raises(MCPError, match="No syllabus for section"):
-            await client.read_resource("syllabus://section/varc")
+            await client.read_resource("syllabus://section/gk")
 
 
 async def test_socratic_prompt():
@@ -157,3 +159,29 @@ async def test_socratic_prompt():
             await client.get_prompt("socratic_tutor", {"topic": "time_work", "difficulty": "insane"})
     text = prompt.messages[0].content.text
     assert "Never solve the problem" in text and "CAT/MBA aspirant" in text and "time and work" in text
+
+
+async def test_varc_round_trip():
+    async with Client(mcp) as client:
+        problem = (
+            await client.call_tool("generate_problem", {"topic": "para_jumbles", "difficulty": "hard", "seed": 42})
+        ).structured_content
+        assert problem["section"] == "varc" and problem["problem_id"] == "pj-hard-42"
+        assert "answer" not in problem and "key" not in problem
+        wrong = (
+            await client.call_tool("check_answer", {"problem_id": "pj-hard-42", "answer": "1-2-3-4-5"})
+        ).structured_content
+        hint = (await client.call_tool("get_hint", {"problem_id": "pj-hard-42", "level": 3})).structured_content
+        right = (
+            await client.call_tool("check_answer", {"problem_id": "pj-hard-42", "answer": "4-1-3-2-5"})
+        ).structured_content
+    assert wrong["correct"] is False and "41325" not in wrong["feedback"] and wrong["solution"] is None
+    assert "41325" not in hint["hint"]
+    assert right["correct"] is True and "41325" in right["solution"]
+
+
+async def test_varc_prompt_uses_verbal_coach():
+    async with Client(mcp) as client:
+        prompt = await client.get_prompt("socratic_tutor", {"topic": "para_summary", "difficulty": "easy"})
+    text = prompt.messages[0].content.text
+    assert "verbal ability (VARC) coach" in text and "para summary" in text

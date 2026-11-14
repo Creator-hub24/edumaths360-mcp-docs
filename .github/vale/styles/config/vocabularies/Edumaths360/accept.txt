@@ -18,3 +18,5 @@ get_hint
 problem_id
 socratic_tutor
 get_hintArguments
+[Dd]istractors?
+(?:VARC|varc)

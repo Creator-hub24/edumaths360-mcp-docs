@@ -106,17 +106,30 @@ def main() -> None:
         {"name": "check_answer", "arguments": {"problem_id": "pl-hard-42", "answer": "no idea"}},
         title="8. Tool error: answer without a number",
     )
-    send("resources/list", {}, title="9. List static resources")
-    send("resources/templates/list", {}, title="10. List resource templates")
-    send("resources/read", {"uri": "syllabus://section/quant"}, title="11. Read a resource")
-    send("prompts/list", {}, title="12. List prompts")
+    send(
+        "tools/call",
+        {
+            "name": "generate_problem",
+            "arguments": {"topic": "para_summary", "difficulty": "medium", "seed": 42},
+        },
+        title="9. Generate a VARC problem (para summary)",
+    )
+    send(
+        "tools/call",
+        {"name": "check_answer", "arguments": {"problem_id": "sum-medium-42", "answer": "A"}},
+        title="10. Check a VARC answer (a narrow distractor)",
+    )
+    send("resources/list", {}, title="11. List static resources")
+    send("resources/templates/list", {}, title="12. List resource templates")
+    send("resources/read", {"uri": "syllabus://section/varc"}, title="13. Read a resource")
+    send("prompts/list", {}, title="14. List prompts")
     send(
         "prompts/get",
         {"name": "socratic_tutor", "arguments": {"topic": "time_work", "difficulty": "hard"}},
-        title="13. Get a prompt",
+        title="15. Get a prompt",
     )
-    send("resources/read", {"uri": "syllabus://section/varc"}, title="14. Protocol error: resource not found")
-    send("tools/unknown_method", {}, title="15. Protocol error: unknown method")
+    send("resources/read", {"uri": "syllabus://section/gk"}, title="16. Protocol error: resource not found")
+    send("tools/unknown_method", {}, title="17. Protocol error: unknown method")
 
     proc.stdin.close()
     proc.wait(timeout=10)

@@ -33,12 +33,12 @@
               "listChanged": false
             }
           },
-          "instructions": "Quantitative aptitude and reasoning practice for CAT, MBA and other competitive-exam aspirants. Use generate_problem to create a problem, let the student attempt it, and use check_answer to mark it. If the student is stuck, call get_hint with level 1 first and only move to higher levels if they are still stuck. Do not solve the problem for the student yourself.",
+          "instructions": "CAT-style practice in quantitative aptitude, DILR/reasoning and VARC for MBA and other competitive-exam aspirants. Use generate_problem to create a problem, let the student attempt it, and use check_answer to mark it. If the student is stuck, call get_hint with level 1 first and only move to higher levels if they are still stuck. Do not solve the problem for the student yourself.",
           "protocolVersion": "2025-11-25",
           "serverInfo": {
             "name": "edumaths360-practice",
             "title": "Edumaths360 Practice Server",
-            "version": "0.2.0"
+            "version": "0.3.0"
           }
         }
       }
@@ -70,11 +70,11 @@
                 "openWorldHint": false,
                 "readOnlyHint": true
               },
-              "description": "Create a CAT-style quantitative aptitude or reasoning practice problem. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.",
+              "description": "Create a CAT-style practice problem in quant, reasoning or VARC. Returns the problem statement and a problem_id, but never the answer. Show the statement to the student and let them attempt it.",
               "inputSchema": {
                 "properties": {
                   "topic": {
-                    "description": "Quant or reasoning topic to practise.",
+                    "description": "Quant, reasoning or VARC topic to practise.",
                     "enum": [
                       "percentages",
                       "profit_loss",
@@ -85,7 +85,10 @@
                       "linear_equations",
                       "quadratics",
                       "number_system",
-                      "number_series"
+                      "number_series",
+                      "para_jumbles",
+                      "odd_sentence_out",
+                      "para_summary"
                     ],
                     "title": "Topic",
                     "type": "string"
@@ -132,7 +135,7 @@
                     "type": "string"
                   },
                   "section": {
-                    "description": "Exam section: 'quant' or 'reasoning'.",
+                    "description": "Exam section: 'quant', 'reasoning' or 'varc'.",
                     "title": "Section",
                     "type": "string"
                   },
@@ -192,13 +195,13 @@
                   "problem_id": {
                     "description": "ID returned by generate_problem.",
                     "maxLength": 32,
-                    "pattern": "^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\\d{1,6})$",
+                    "pattern": "^(pct|pl|ratio|tsd|work|int|lin|quad|num|series|pj|odd|sum)-(easy|medium|hard)-(\\d{1,6})$",
                     "title": "Problem Id",
                     "type": "string"
                   },
                   "answer": {
-                    "description": "The student's answer, for example '1300', 'Rs 1,300', '37.5', 'x = -3', '2, -5'.",
-                    "maxLength": 100,
+                    "description": "The student's answer, for example '1300', 'Rs 1,300', '37.5', '2, -5', '2-4-1-3' (para jumbles), '3' (odd sentence out) or 'B' (para summary).",
+                    "maxLength": 300,
                     "minLength": 1,
                     "title": "Answer",
                     "type": "string"
@@ -270,7 +273,7 @@
                   "problem_id": {
                     "description": "ID returned by generate_problem.",
                     "maxLength": 32,
-                    "pattern": "^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\\d{1,6})$",
+                    "pattern": "^(pct|pl|ratio|tsd|work|int|lin|quad|num|series|pj|odd|sum)-(easy|medium|hard)-(\\d{1,6})$",
                     "title": "Problem Id",
                     "type": "string"
                   },
@@ -503,20 +506,94 @@
       }
     },
     {
-      "title": "9. List static resources",
+      "title": "9. Generate a VARC problem (para summary)",
       "request": {
         "jsonrpc": "2.0",
-        "method": "resources/list",
+        "method": "tools/call",
         "id": 8,
-        "params": {}
+        "params": {
+          "name": "generate_problem",
+          "arguments": {
+            "topic": "para_summary",
+            "difficulty": "medium",
+            "seed": 42
+          }
+        }
       },
       "response": {
         "jsonrpc": "2.0",
         "id": 8,
         "result": {
+          "content": [
+            {
+              "text": "{\n  \"problem_id\": \"sum-medium-42\",\n  \"section\": \"varc\",\n  \"topic\": \"para_summary\",\n  \"difficulty\": \"medium\",\n  \"seed\": 42,\n  \"statement\": \"Read the passage and choose the option that best captures its essence.\\n\\nPassage: Many museums in Europe hold objects that were taken from other countries during colonial rule. For decades, curators argued that these collections were safer and more widely seen in major museums. That argument has weakened as countries of origin have built well-equipped museums of their own, and as visitors have grown more interested in how objects were acquired. Several institutions have now returned items, while others are lending them back or sharing ownership.\\n\\nA. Countries of origin have built well-equipped museums of their own.\\nB. As the old case for keeping colonial-era artefacts weakens, museums are increasingly returning, lending or sharing them.\\nC. All museums will soon have to return every object that came from another country.\\nD. Museums keep colonial-era objects because they are still safer in Europe.\",\n  \"answer_format\": \"the letter of one option (A, B, C or D), or the option's full text\",\n  \"max_hint_level\": 3\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false,
+          "structuredContent": {
+            "problem_id": "sum-medium-42",
+            "section": "varc",
+            "topic": "para_summary",
+            "difficulty": "medium",
+            "seed": 42,
+            "statement": "Read the passage and choose the option that best captures its essence.\n\nPassage: Many museums in Europe hold objects that were taken from other countries during colonial rule. For decades, curators argued that these collections were safer and more widely seen in major museums. That argument has weakened as countries of origin have built well-equipped museums of their own, and as visitors have grown more interested in how objects were acquired. Several institutions have now returned items, while others are lending them back or sharing ownership.\n\nA. Countries of origin have built well-equipped museums of their own.\nB. As the old case for keeping colonial-era artefacts weakens, museums are increasingly returning, lending or sharing them.\nC. All museums will soon have to return every object that came from another country.\nD. Museums keep colonial-era objects because they are still safer in Europe.",
+            "answer_format": "the letter of one option (A, B, C or D), or the option's full text",
+            "max_hint_level": 3
+          }
+        }
+      }
+    },
+    {
+      "title": "10. Check a VARC answer (a narrow distractor)",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 9,
+        "params": {
+          "name": "check_answer",
+          "arguments": {
+            "problem_id": "sum-medium-42",
+            "answer": "A"
+          }
+        }
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "result": {
+          "content": [
+            {
+              "text": "{\n  \"problem_id\": \"sum-medium-42\",\n  \"correct\": false,\n  \"attempt\": 1,\n  \"feedback\": \"That option is true to the passage but covers only one detail or example, not the main point.\",\n  \"solution\": null\n}",
+              "type": "text"
+            }
+          ],
+          "isError": false,
+          "structuredContent": {
+            "problem_id": "sum-medium-42",
+            "correct": false,
+            "attempt": 1,
+            "feedback": "That option is true to the passage but covers only one detail or example, not the main point.",
+            "solution": null
+          }
+        }
+      }
+    },
+    {
+      "title": "11. List static resources",
+      "request": {
+        "jsonrpc": "2.0",
+        "method": "resources/list",
+        "id": 10,
+        "params": {}
+      },
+      "response": {
+        "jsonrpc": "2.0",
+        "id": 10,
+        "result": {
           "resources": [
             {
-              "description": "Every topic the server can generate, grouped by exam section (quant or reasoning).",
+              "description": "Every topic the server can generate, grouped by exam section (quant, reasoning or varc).",
               "mimeType": "application/json",
               "name": "all_topics",
               "title": "All topics",
@@ -527,20 +604,20 @@
       }
     },
     {
-      "title": "10. List resource templates",
+      "title": "12. List resource templates",
       "request": {
         "jsonrpc": "2.0",
         "method": "resources/templates/list",
-        "id": 9,
+        "id": 11,
         "params": {}
       },
       "response": {
         "jsonrpc": "2.0",
-        "id": 9,
+        "id": 11,
         "result": {
           "resourceTemplates": [
             {
-              "description": "Topics and difficulty levels in one section: 'quant' or 'reasoning'.",
+              "description": "Topics and difficulty levels in one section: 'quant', 'reasoning' or 'varc'.",
               "mimeType": "application/json",
               "name": "section_syllabus",
               "title": "Syllabus for one exam section",
@@ -551,40 +628,40 @@
       }
     },
     {
-      "title": "11. Read a resource",
+      "title": "13. Read a resource",
       "request": {
         "jsonrpc": "2.0",
         "method": "resources/read",
-        "id": 10,
+        "id": 12,
         "params": {
-          "uri": "syllabus://section/quant"
+          "uri": "syllabus://section/varc"
         }
       },
       "response": {
         "jsonrpc": "2.0",
-        "id": 10,
+        "id": 12,
         "result": {
           "contents": [
             {
               "mimeType": "application/json",
-              "text": "{\n  \"section\": \"quant\",\n  \"description\": \"Quantitative aptitude: arithmetic, algebra and number system.\",\n  \"topics\": [\n    {\n      \"topic\": \"percentages\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Percentage of a quantity, successive percentage change, and price-consumption problems.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"profit_loss\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Cost price, selling price, marked price and discount, and profit or loss percentages.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"ratio_proportion\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Dividing in a ratio, combining ratios, and mixtures.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"time_speed_distance\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Trains, unit conversion, average speed and relative speed.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"time_work\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Working together, finding one person's rate, and pipes and cisterns.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"interest\",\n      \"section\": \"quant\",\n      \"area\": \"arithmetic\",\n      \"description\": \"Simple interest, compound interest, and the CI - SI difference.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"linear_equations\",\n      \"section\": \"quant\",\n      \"area\": \"algebra\",\n      \"description\": \"Word problems and pairs of linear equations in two variables.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"quadratics\",\n      \"section\": \"quant\",\n      \"area\": \"algebra\",\n      \"description\": \"Solve quadratic equations by factorisation.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"number_system\",\n      \"section\": \"quant\",\n      \"area\": \"number system\",\n      \"description\": \"HCF and LCM, units digits of powers, and counting factors.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    }\n  ]\n}",
-              "uri": "syllabus://section/quant"
+              "text": "{\n  \"section\": \"varc\",\n  \"description\": \"Verbal ability (VARC): para jumbles, odd sentence out and para summary, on original passages.\",\n  \"topics\": [\n    {\n      \"topic\": \"para_jumbles\",\n      \"section\": \"varc\",\n      \"area\": \"verbal ability\",\n      \"description\": \"Arrange four or five shuffled sentences into a coherent paragraph (TITA order answer).\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"odd_sentence_out\",\n      \"section\": \"varc\",\n      \"area\": \"verbal ability\",\n      \"description\": \"Find the one sentence out of five that does not belong to the paragraph (TITA).\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    },\n    {\n      \"topic\": \"para_summary\",\n      \"section\": \"varc\",\n      \"area\": \"verbal ability\",\n      \"description\": \"Choose the option (A to D) that best summarises a short passage.\",\n      \"difficulties\": [\n        \"easy\",\n        \"medium\",\n        \"hard\"\n      ]\n    }\n  ]\n}",
+              "uri": "syllabus://section/varc"
             }
           ]
         }
       }
     },
     {
-      "title": "12. List prompts",
+      "title": "14. List prompts",
       "request": {
         "jsonrpc": "2.0",
         "method": "prompts/list",
-        "id": 11,
+        "id": 13,
         "params": {}
       },
       "response": {
         "jsonrpc": "2.0",
-        "id": 11,
+        "id": 13,
         "result": {
           "prompts": [
             {
@@ -607,11 +684,11 @@
       }
     },
     {
-      "title": "13. Get a prompt",
+      "title": "15. Get a prompt",
       "request": {
         "jsonrpc": "2.0",
         "method": "prompts/get",
-        "id": 12,
+        "id": 14,
         "params": {
           "name": "socratic_tutor",
           "arguments": {
@@ -622,7 +699,7 @@
       },
       "response": {
         "jsonrpc": "2.0",
-        "id": 12,
+        "id": 14,
         "result": {
           "description": "Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers.",
           "messages": [
@@ -638,38 +715,38 @@
       }
     },
     {
-      "title": "14. Protocol error: resource not found",
+      "title": "16. Protocol error: resource not found",
       "request": {
         "jsonrpc": "2.0",
         "method": "resources/read",
-        "id": 13,
+        "id": 15,
         "params": {
-          "uri": "syllabus://section/varc"
+          "uri": "syllabus://section/gk"
         }
       },
       "response": {
         "jsonrpc": "2.0",
-        "id": 13,
+        "id": 15,
         "error": {
           "code": -32602,
-          "message": "No syllabus for section 'varc'. Use one of: quant, reasoning.",
+          "message": "No syllabus for section 'gk'. Use one of: quant, reasoning, varc.",
           "data": {
-            "uri": "syllabus://section/varc"
+            "uri": "syllabus://section/gk"
           }
         }
       }
     },
     {
-      "title": "15. Protocol error: unknown method",
+      "title": "17. Protocol error: unknown method",
       "request": {
         "jsonrpc": "2.0",
         "method": "tools/unknown_method",
-        "id": 14,
+        "id": 16,
         "params": {}
       },
       "response": {
         "jsonrpc": "2.0",
-        "id": 14,
+        "id": 16,
         "error": {
           "code": -32601,
           "message": "Method not found",

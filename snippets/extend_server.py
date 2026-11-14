@@ -39,7 +39,7 @@ class Worksheet(BaseModel):
     annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
 )
 def make_worksheet(
-    topic: Annotated[Topic, Field(description="Quant or reasoning topic to practise.")],
+    topic: Annotated[Topic, Field(description="Quant, reasoning or VARC topic to practise.")],
     difficulty: Annotated[Difficulty, Field(description="How challenging the problems should be.")] = "easy",
     count: Annotated[int, Field(ge=1, le=10, description="Number of problems, 1 to 10.")] = 5,
     first_seed: Annotated[int, Field(ge=0, le=MAX_SEED - 10, description="Seed of the first problem.")] = 1,

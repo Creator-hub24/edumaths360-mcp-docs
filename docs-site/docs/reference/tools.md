@@ -26,7 +26,7 @@ The server exposes three tools. Each one has a JSON Schema for its input (`input
 
 | Name | Type | Required | Default | Constraints | Description |
 | --- | --- | --- | --- | --- | --- |
-| `topic` | string | Yes | — | One of the 10 topics below | Quant or reasoning topic to practise. |
+| `topic` | string | Yes | — | One of the 13 topics below | Quant, reasoning or VARC topic to practise. |
 | `difficulty` | string | No | `"medium"` | `easy`, `medium`, `hard` | How challenging the problem should be. |
 | `seed` | integer or null | No | `null` | 0 to 999999 | Seed for a reproducible problem. Omit for a random one. |
 
@@ -44,8 +44,13 @@ Every topic is offered at every difficulty:
 | `quadratics` | quant | `x² + bx + c = 0`, two positive whole-number roots | `x² + bx + c = 0`, at least one negative root | `ax² + bx + c = 0` (a from 2 to 5) with one fractional root |
 | `number_system` | quant | HCF or LCM of two numbers | Units digit of a power | Number of factors of a number |
 | `number_series` | reasoning | Next term of an arithmetic series | Geometric series or series with growing gaps | Multiply-and-add series, or two interleaved series |
+| `para_jumbles` | varc | 4 sentences with clear time or cause links | 4 sentences joined by pronouns and connectors | 5 sentences with a longer argument |
+| `odd_sentence_out` | varc | 5 sentences, the odd one on a nearby but different subject | The odd one shares keywords with the paragraph | The odd one is on the same subject but makes a different point |
+| `para_summary` | varc | Short passage, 4 options | Passage with a claim and a condition | Passage with a balanced or qualified conclusion |
 
 Numbers are chosen so that every answer is exact: a whole number, a short decimal such as 37.5, or (for quadratics) a simple fraction.
+
+VARC items come from a small bank of original passages written for this project: 9 items per type (3 per difficulty), 27 in all. The seed picks the item and shuffles it, so the same seed always gives the same sentence order or option order. A para jumble is never shown already in the right order.
 
 <details>
 <summary>Full <code>inputSchema</code></summary>
@@ -56,10 +61,11 @@ Numbers are chosen so that every answer is exact: a whole number, a short decima
   "title": "generate_problemArguments",
   "properties": {
     "topic": {
-      "description": "Quant or reasoning topic to practise.",
+      "description": "Quant, reasoning or VARC topic to practise.",
       "enum": [
         "percentages", "profit_loss", "ratio_proportion", "time_speed_distance", "time_work",
-        "interest", "linear_equations", "quadratics", "number_system", "number_series"
+        "interest", "linear_equations", "quadratics", "number_system", "number_series",
+        "para_jumbles", "odd_sentence_out", "para_summary"
       ],
       "title": "Topic",
       "type": "string"
@@ -89,7 +95,7 @@ Numbers are chosen so that every answer is exact: a whole number, a short decima
 | Field | Type | Description |
 | --- | --- | --- |
 | `problem_id` | string | Stable ID, for example `pl-hard-42`. Pass it to `check_answer` and `get_hint`. |
-| `section` | string | Exam section: `quant` or `reasoning`. |
+| `section` | string | Exam section: `quant`, `reasoning` or `varc`. |
 | `topic` | string | The topic. |
 | `difficulty` | string | The difficulty. |
 | `seed` | integer | Seed used. The same topic, difficulty and seed give the same problem. |
@@ -136,8 +142,10 @@ pl-hard-42
 | `ratio_proportion` | `ratio` | `quadratics` | `quad` |
 | `time_speed_distance` | `tsd` | `number_system` | `num` |
 | `time_work` | `work` | `number_series` | `series` |
+| `para_jumbles` | `pj` | `odd_sentence_out` | `odd` |
+| `para_summary` | `sum` | | |
 
-IDs must match `^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\d{1,6})$` and be at most 32 characters.
+IDs must match `^(pct|pl|ratio|tsd|work|int|lin|quad|num|series|pj|odd|sum)-(easy|medium|hard)-(\d{1,6})$` and be at most 32 characters.
 
 ## `check_answer`
 
@@ -150,9 +158,15 @@ IDs must match `^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|ha
 | Name | Type | Required | Constraints | Description |
 | --- | --- | --- | --- | --- |
 | `problem_id` | string | Yes | Problem ID pattern, max 32 characters | ID returned by `generate_problem`. |
-| `answer` | string | Yes | 1 to 100 characters | The student's answer, for example `1300`, `Rs 1,300`, `37.5`, `x = -3` or `2, -5`. |
+| `answer` | string | Yes | 1 to 300 characters | The student's answer, for example `1300`, `Rs 1,300`, `37.5`, `2, -5`, `2-4-1-3` (para jumbles), `3` (odd sentence out) or `B` (para summary). |
 
 **Accepted answer formats.** The checker reads numbers from free text and uses the last one, so `1300`, `SP = Rs. 1300` and `Rs 1,300` are equivalent. Digit grouping with commas works in both styles (`1,200,000` and `12,00,000`). A `%` sign, units such as `km/h`, fractions (`75/2`), decimals (`37.5`) and negative numbers (`-3`, or `−3` with a Unicode minus) all work. For quadratics, give both roots in any order: `3/4, 3` or `x = 3 or x = 0.75`. There, commas separate the roots.
+
+**VARC answer formats.**
+
+- **Para jumbles:** every sentence number once, in order. `2-4-1-3`, `2413`, `2 4 1 3` and `2, 4, 1, 3` are equivalent. A missing or repeated number is a tool error, not a wrong answer.
+- **Odd sentence out:** one number from 1 to 5, such as `3` or `Sentence 3`.
+- **Para summary:** a letter (`B`, `b`, `(B)`, `Option B`) or the full text of the option pasted back. Case and punctuation are ignored.
 
 ### Output: `AnswerCheck`
 
@@ -175,6 +189,9 @@ IDs must match `^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|ha
 | Wrong, attempt 3 or later | Feedback plus " You have tried this a few times, so here is the worked solution. Read it, then try a new problem." | Worked solution |
 | Quadratic, only one root given and it is right | "One root is right. A quadratic like this has two roots; find the other one." | `null` |
 | Quadratic, one root right and one wrong | "One of your roots is right, but the other is not. Check that bracket again." | `null` |
+| VARC, correct | Praise that names what worked, for example "Correct! That option keeps the main claim without adding or dropping anything." | Correct order, sentence or option, with the reason |
+| Para summary, wrong option | Names the kind of trap: covers only one detail, goes beyond the passage, or changes what the passage says | `null` |
+| Para jumbles or odd sentence out, wrong | A general nudge that never names a sentence number | `null` |
 
 ### Example
 
@@ -236,10 +253,11 @@ The call succeeds at the protocol level, but the result has `"isError": true` an
 | Cause | Example message |
 | --- | --- |
 | Answer contains no number | `Error executing tool check_answer: I could not find a number in that answer. Expected format: a number, for example 450 (no units, % or Rs sign needed).` |
+| VARC answer in the wrong shape | `… Give each of the 4 sentence numbers exactly once, in order. Expected format: …`, `… Give one sentence number. …` or `… I could not match that to an option. …` |
 | Fraction with zero denominator | `Error executing tool check_answer: A fraction cannot have 0 as its denominator. Expected format: …` |
 | Argument fails the schema (wrong type, out of range, bad pattern, empty) | `Error executing tool get_hint: 1 validation error for get_hintArguments` followed by `level` and `Input should be less than or equal to 3 [type=less_than_equal, input_value=5, input_type=int]` |
-| Unknown topic or difficulty | `… topic  Input should be 'percentages', 'profit_loss', 'ratio_proportion', …, 'number_system' or 'number_series' [type=literal_error, …]` |
-| Invalid problem ID, such as `../etc/passwd` | `… problem_id  String should match pattern '^(pct\|pl\|ratio\|tsd\|work\|int\|lin\|quad\|num\|series)-(easy\|medium\|hard)-(\d{1,6})$' [type=string_pattern_mismatch, …]` |
+| Unknown topic or difficulty | `… topic  Input should be 'percentages', 'profit_loss', 'ratio_proportion', …, 'number_series', 'para_jumbles', 'odd_sentence_out' or 'para_summary' [type=literal_error, …]` |
+| Invalid problem ID, such as `../etc/passwd` | `… problem_id  String should match pattern '^(pct\|pl\|ratio\|tsd\|work\|int\|lin\|quad\|num\|series\|pj\|odd\|sum)-(easy\|medium\|hard)-(\d{1,6})$' [type=string_pattern_mismatch, …]` |
 
 Schema validation runs **before** the tool's code. An invalid argument never reaches the problem engine.
 
@@ -249,7 +267,7 @@ The request itself is rejected, and the response has an `error` object instead o
 
 | Code | Name | When |
 | --- | --- | --- |
-| `-32602` | Invalid params | Reading an unknown resource such as `syllabus://section/varc`, or invalid arguments to the `socratic_tutor` prompt. |
+| `-32602` | Invalid params | Reading an unknown resource such as `syllabus://section/gk`, or invalid arguments to the `socratic_tutor` prompt. |
 | `-32601` | Method not found | Calling a method the server does not implement. |
 
 Full request and response pairs are in the [JSON-RPC examples](./json-rpc-examples.mdx).

@@ -54,11 +54,11 @@ export default function Home(): ReactNode {
         <div className="container">
           <p className={styles.eyebrow}>Edumaths360 · Docs as Code</p>
           <Heading as="h1" className={styles.title}>
-            Give AI assistants the tools of a good quant and reasoning coach
+            Give AI assistants the tools of a good CAT coach
           </Heading>
           <p className={styles.subtitle}>
-            An open-source <strong>Model Context Protocol</strong> server that generates CAT-style quantitative aptitude
-            and reasoning problems, checks answers and gives graduated hints, without handing over the answer. Documented
+            An open-source <strong>Model Context Protocol</strong> server that generates CAT-style practice in all three
+            sections, QA, DILR/reasoning and VARC, checks answers and gives graduated hints, without handing over the answer. Documented
             end to end, with the code examples tested in CI.
           </p>
           <div className={styles.buttons}>

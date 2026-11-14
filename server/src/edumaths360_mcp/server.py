@@ -1,8 +1,8 @@
 """Edumaths360 Practice Server.
 
-An MCP server that lets an AI assistant run quantitative aptitude and
-reasoning practice for CAT, MBA and other competitive-exam aspirants without
-doing the thinking for them.
+An MCP server that lets an AI assistant run CAT-style practice in all three
+sections (quantitative aptitude, DILR/reasoning and VARC) for MBA and other
+competitive-exam aspirants without doing the thinking for them.
 
 Run it with ``edumaths360-mcp`` (or ``python -m edumaths360_mcp``). It speaks
 MCP over stdio, so stdout is reserved for protocol messages: all logging goes
@@ -58,7 +58,8 @@ mcp = MCPServer(
     title="Edumaths360 Practice Server",
     version=__version__,
     instructions=(
-        "Quantitative aptitude and reasoning practice for CAT, MBA and other competitive-exam aspirants. "
+        "CAT-style practice in quantitative aptitude, DILR/reasoning and VARC for MBA and other "
+        "competitive-exam aspirants. "
         "Use generate_problem to create a problem, "
         "let the student attempt it, and use check_answer to mark it. If the student is stuck, "
         "call get_hint with level 1 first and only move to higher levels if they are still stuck. "
@@ -74,7 +75,7 @@ class GeneratedProblem(BaseModel):
     """A new practice problem. The answer is deliberately not included."""
 
     problem_id: str = Field(description="Stable ID. Pass it to check_answer and get_hint.")
-    section: str = Field(description="Exam section: 'quant' or 'reasoning'.")
+    section: str = Field(description="Exam section: 'quant', 'reasoning' or 'varc'.")
     topic: str
     difficulty: str
     seed: int = Field(description="Seed used. The same topic, difficulty and seed give the same problem.")
@@ -136,7 +137,7 @@ attempts = AttemptTracker()
 # ------------------------------------------------------------------- tools
 
 GENERATE_PROBLEM_DESCRIPTION = (
-    "Create a CAT-style quantitative aptitude or reasoning practice problem. Returns the problem "
+    "Create a CAT-style practice problem in quant, reasoning or VARC. Returns the problem "
     "statement and a problem_id, but never the answer. Show the statement to the student and let them "
     "attempt it."
 )
@@ -157,7 +158,7 @@ GET_HINT_DESCRIPTION = (
     annotations=ToolAnnotations(read_only_hint=True, idempotent_hint=True, open_world_hint=False),
 )
 def generate_problem(
-    topic: Annotated[Topic, Field(description="Quant or reasoning topic to practise.")],
+    topic: Annotated[Topic, Field(description="Quant, reasoning or VARC topic to practise.")],
     difficulty: Annotated[Difficulty, Field(description="How challenging the problem should be.")] = "medium",
     seed: Annotated[
         int | None,
@@ -205,8 +206,11 @@ def check_answer(
         str,
         Field(
             min_length=1,
-            max_length=100,
-            description="The student's answer, for example '1300', 'Rs 1,300', '37.5', 'x = -3', '2, -5'.",
+            max_length=300,
+            description=(
+                "The student's answer, for example '1300', 'Rs 1,300', '37.5', '2, -5', "
+                "'2-4-1-3' (para jumbles), '3' (odd sentence out) or 'B' (para summary)."
+            ),
         ),
     ],
 ) -> AnswerCheck:
@@ -293,7 +297,7 @@ def _topic_entry(topic: str) -> dict:
 @mcp.resource(
     "syllabus://topics",
     title="All topics",
-    description="Every topic the server can generate, grouped by exam section (quant or reasoning).",
+    description="Every topic the server can generate, grouped by exam section (quant, reasoning or varc).",
     mime_type="application/json",
 )
 def all_topics() -> str:
@@ -303,7 +307,7 @@ def all_topics() -> str:
 @mcp.resource(
     "syllabus://section/{section}",
     title="Syllabus for one exam section",
-    description="Topics and difficulty levels in one section: 'quant' or 'reasoning'.",
+    description="Topics and difficulty levels in one section: 'quant', 'reasoning' or 'varc'.",
     mime_type="application/json",
 )
 def section_syllabus(section: str) -> str:
@@ -321,7 +325,7 @@ def section_syllabus(section: str) -> str:
 
 
 @mcp.prompt(
-    title="Socratic quant tutor",
+    title="Socratic CAT tutor",
     description=(
         "Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers."
     ),
@@ -333,14 +337,17 @@ def socratic_tutor(topic: str = "percentages", difficulty: str = "medium") -> st
         raise MCPError(INVALID_PARAMS, f"Unknown topic '{topic}'. Choose one of: {', '.join(TOPICS)}.")
     if difficulty not in DIFFICULTIES:
         raise MCPError(INVALID_PARAMS, f"Unknown difficulty '{difficulty}'. Choose one of: {', '.join(DIFFICULTIES)}.")
+    varc = TOPIC_SECTIONS[topic] == "varc"
+    coach = "verbal ability (VARC)" if varc else "quantitative aptitude and reasoning"
+    example = "Which sentence introduces the topic?" if varc else "What is the cost price here?"
     return (
-        "You are a patient quantitative aptitude and reasoning coach for a CAT/MBA aspirant practising "
+        f"You are a patient {coach} coach for a CAT/MBA aspirant practising "
         f"{TOPIC_LABELS[topic]} at {difficulty} difficulty.\n\n"
         "Rules:\n"
         f"1. Call generate_problem with topic='{topic}' and difficulty='{difficulty}', then show the "
         "student the statement.\n"
         "2. Never solve the problem for the student and never state the final answer yourself.\n"
-        "3. Ask one short guiding question at a time, for example 'What is the cost price here?'.\n"
+        f"3. Ask one short guiding question at a time, for example '{example}'.\n"
         "4. When the student gives an answer, call check_answer and share the feedback in your own words.\n"
         "5. If the student is stuck, call get_hint starting at level 1. Only go to the next level "
         "if they are still stuck after trying.\n"

@@ -6,7 +6,7 @@ description: How the Edumaths360 server is structured, how a practice round flow
 
 # Architecture
 
-The server is about 370 lines of protocol code on top of about 1,240 lines of pure-Python problem generation and checking for 10 quant and reasoning topics. This page explains how the parts fit together and why they are split this way.
+The server is about 370 lines of protocol code on top of about 1,830 lines of pure-Python problem generation, answer checking and an original VARC item bank for 13 topics across quant, reasoning and VARC. This page explains how the parts fit together and why they are split this way.
 
 ## Components
 
@@ -38,6 +38,7 @@ flowchart TB
 | Protocol | MCP Python SDK (`MCPServer`) | Reads and writes JSON-RPC, builds JSON Schemas from type hints, validates arguments, turns exceptions into error results. |
 | Interface | `server/src/edumaths360_mcp/server.py` | Defines the tools, resources and prompt. Applies the teaching rules: when to reveal a solution and what to say on attempt 2. |
 | Domain | `server/src/edumaths360_mcp/problems.py` | Generates problems, hints, solutions and misconception feedback. Parses and checks answers. Knows nothing about MCP. |
+| VARC bank | `server/src/edumaths360_mcp/varc_bank.py` | Original para jumbles, odd-sentence-out and para summary items, written for this project. Plain data: `problems.py` picks and shuffles them by seed. |
 
 Keeping the problem engine free of MCP has two benefits. It can be tested directly and quickly (most of the test suite never starts a server), and the same code could power a website or a worksheet generator later.
 
@@ -106,7 +107,7 @@ The counter lives only in memory. Restarting the server resets it, which is acce
 
 | Test file | What it covers | How |
 | --- | --- | --- |
-| `test_problems.py` | Every topic and difficulty: determinism, tidy exact answers, answer checking, hint safety, misconception feedback, parsing. | Calls `problems.py` directly. Parametrised over many seeds. |
+| `test_problems.py` | Every topic and difficulty: determinism, tidy exact answers, answer checking (including every VARC answer format), hint safety, misconception feedback, parsing. | Calls `problems.py` directly. Parametrised over many seeds. |
 | `test_server.py` | Schemas, the reveal policy, hint levels, every error path, resources and the prompt. | A real MCP `Client` connected to the server in memory. |
 | `test_stdio.py` | The installed server starts and answers over stdio. | Launches `python -m edumaths360_mcp` as a subprocess. |
 | `test_snippets.py` | The code shown in these docs still works. | Runs the tutorial server and the how-to example. |

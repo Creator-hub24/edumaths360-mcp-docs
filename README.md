@@ -1,4 +1,4 @@
-# 🧮 Edumaths360 MCP Docs — a Docs-as-Code Developer Hub for a Quant & Reasoning Tutor MCP Server
+# 🧮 Edumaths360 MCP Docs — a Docs-as-Code Developer Hub for a CAT (QA, DILR & VARC) Tutor MCP Server
 
 [![CI](https://github.com/Creator-hub24/edumaths360-mcp-docs/actions/workflows/ci.yml/badge.svg)](https://github.com/Creator-hub24/edumaths360-mcp-docs/actions/workflows/ci.yml)
 [![Deploy docs](https://github.com/Creator-hub24/edumaths360-mcp-docs/actions/workflows/deploy.yml/badge.svg)](https://github.com/Creator-hub24/edumaths360-mcp-docs/actions/workflows/deploy.yml)
@@ -9,7 +9,7 @@
 ![Vale](https://img.shields.io/badge/Prose_lint-Vale-2F9FD8)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-**A working [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that turns an AI assistant into a patient quantitative aptitude and reasoning coach for CAT, MBA and other competitive-exam aspirants, plus the developer documentation hub I would want if I were integrating it.** The server generates CAT-style practice problems, checks answers with feedback that names the mistake, and gives graduated hints without handing over the answer. The docs follow the Diátaxis framework, are built from the same repository, and are tested in CI so the code on the page always matches the code that runs.
+**A working [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that turns an AI assistant into a patient coach for all three CAT sections (quantitative aptitude, DILR/reasoning and VARC) for CAT, MBA and other competitive-exam aspirants, plus the developer documentation hub I would want if I were integrating it.** The server generates CAT-style practice problems, checks answers with feedback that names the mistake, and gives graduated hints without handing over the answer. The docs follow the Diátaxis framework, are built from the same repository, and are tested in CI so the code on the page always matches the code that runs.
 
 ### 🌐 Live docs: **[creator-hub24.github.io/edumaths360-mcp-docs](https://creator-hub24.github.io/edumaths360-mcp-docs/)**
 
@@ -27,7 +27,7 @@ flowchart LR
     Client <-->|"JSON-RPC 2.0 over stdio"| SDK["MCPServer<br/>(MCP Python SDK)"]
     subgraph Server["edumaths360_mcp"]
         SDK --> API["server.py<br/>3 tools · 2 resources · 1 prompt"]
-        API --> Maths["problems.py<br/>pure-Python quant and reasoning engine"]
+        API --> Maths["problems.py + varc_bank.py<br/>pure-Python QA, reasoning and VARC engine"]
         API --> Tracker["Attempt tracker<br/>(in memory, bounded)"]
     end
 ```
@@ -37,7 +37,7 @@ flowchart LR
 | 🛠️ Tool | `generate_problem` | Creates a problem for a topic and difficulty (easy, medium, hard). Returns a stable ID, never the answer. |
 | 🛠️ Tool | `check_answer` | Marks an answer, diagnoses common misconceptions, reveals the worked solution only after 3 tries. |
 | 🛠️ Tool | `get_hint` | Three levels of hint, from "which method?" to "do the last step". Tested never to state the answer. |
-| 📚 Resource | `syllabus://topics`, `syllabus://section/{section}` | The syllabus as JSON, overall and per exam section (quant, reasoning). |
+| 📚 Resource | `syllabus://topics`, `syllabus://section/{section}` | The syllabus as JSON, overall and per exam section (quant, reasoning, varc). |
 | 💬 Prompt | `socratic_tutor` | A tutoring session that asks guiding questions instead of giving answers. |
 
 Topics:
@@ -45,9 +45,10 @@ Topics:
 - **Quant, arithmetic:** percentages, profit and loss, ratio and proportion (including mixtures), time-speed-distance, time and work (including pipes), simple and compound interest.
 - **Quant, algebra:** linear equations (word problems and pairs of equations), quadratic equations.
 - **Quant, number system:** HCF and LCM, units digits of powers, counting factors.
-- **Logical reasoning:** number series (arithmetic, geometric, difference-based, multiply-and-add, interleaved).
+- **Logical reasoning (DILR):** number series (arithmetic, geometric, difference-based, multiply-and-add, interleaved).
+- **VARC, verbal ability:** para jumbles (TITA order answers such as `2413`), odd sentence out, and para summary (MCQ). 27 original items written for this project, 9 per type across easy, medium and hard.
 
-Every problem is seeded and reproducible, every answer is exact and machine-checkable, and each topic has easy, medium and hard levels.
+Every problem is seeded and reproducible, every answer is exact and machine-checkable (`2-4-1-3`, `2413`, `B` or the pasted option text all work for VARC), and each topic has easy, medium and hard levels.
 
 ## 📚 What's in the docs (Diátaxis)
 
@@ -56,7 +57,7 @@ Every problem is seeded and reproducible, every answer is exact and machine-chec
 | **Start** | Introduction (with video placeholder) |
 | **🎓 Tutorials** | Build your first MCP server in 10 minutes · Connect the server to Claude Desktop |
 | **🧰 How-to guides** | Add a new tool · Connect from a Python client · Configure Claude Desktop and Cursor · Debug with the MCP Inspector |
-| **📖 Reference** | Tools · Resources and prompts · Configuration · JSON-RPC examples (15 real captured messages) |
+| **📖 Reference** | Tools · Resources and prompts · Configuration · JSON-RPC examples (17 real captured messages) |
 | **💡 Explanation** | How MCP works · Architecture · Security model · Hint pedagogy |
 | **🩺 Help** | Troubleshooting (real errors only) · Why I built this |
 
@@ -68,7 +69,7 @@ You need Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 git clone https://github.com/Creator-hub24/edumaths360-mcp-docs.git
 cd edumaths360-mcp-docs/server
 uv sync --extra dev                    # install the server and test tools
-uv run pytest -q                       # 449 tests
+uv run pytest -q                       # 506 tests
 uv run python ../snippets/client.py    # a full practice round from a Python client
 ```
 
@@ -120,10 +121,10 @@ How the docs stay accurate:
 | **Developer documentation** | 17-page Diátaxis site: tutorials, task guides, complete reference, conceptual explanations, real-error troubleshooting |
 | **Docs as code** | Docusaurus + MDX, Mermaid diagrams, code imported from tested files, strict link checking, Vale prose linting, CI/CD to GitHub Pages |
 | **API / protocol knowledge** | MCP tools, resources and prompts; JSON-RPC 2.0 messages; tool errors vs protocol errors; stdio transport; protocol version negotiation |
-| **Python engineering** | Typed MCP server on the official SDK 2.x, Pydantic output schemas, 449 pytest tests (unit, in-memory client, stdio subprocess), ruff |
+| **Python engineering** | Typed MCP server on the official SDK 2.x, Pydantic output schemas, 506 pytest tests (unit, in-memory client, stdio subprocess), ruff |
 | **Security thinking** | Schema validation, prompt-injection defence for prompt arguments, bounded memory, least privilege, honest limits |
 | **Developer experience** | Copy-paste quickstarts with OS tabs, Python/JSON tabs, host configs for Claude Desktop and Cursor, Inspector workflows |
-| **Domain expertise** | Hint levels, misconception feedback and reveal policy designed from years of teaching quantitative aptitude and reasoning to CAT/MBA aspirants |
+| **Domain expertise** | Hint levels, misconception feedback and reveal policy designed from years of teaching CAT/MBA aspirants at Edumaths360 (QA, DILR and VARC) |
 | **Writing for a global audience** | Plain-English style guide written for readers of English as a second language |
 
 ## 📂 Repository structure
@@ -133,8 +134,9 @@ edumaths360-mcp-docs/
 ├── server/                     # The MCP server (Python package: edumaths360-mcp)
 │   ├── src/edumaths360_mcp/
 │   │   ├── server.py           # Tools, resources, prompt (MCP layer)
-│   │   └── problems.py         # Quant & reasoning engine: generate, check, hints (no MCP imports)
-│   ├── tests/                  # 449 tests: problem engine, MCP client, stdio, doc snippets
+│   │   ├── problems.py         # QA, reasoning & VARC engine: generate, check, hints (no MCP imports)
+│   │   └── varc_bank.py        # Original VARC items: para jumbles, odd sentence out, para summary
+│   ├── tests/                  # 506 tests: problem engine, MCP client, stdio, doc snippets
 │   └── pyproject.toml
 ├── snippets/                   # Code quoted in the docs, run by the tests
 │   ├── tutorial/times_table_server.py
@@ -170,6 +172,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and the [style guide](STYLE_GUIDE.md). Is
 
 ## 👤 Author
 
-**Vaibhav Gupta**, founder of Edumaths360, quantitative aptitude and reasoning teacher for CAT/MBA aspirants, moving into developer relations and technical content. 📧 [Edumaths360@gmail.com](mailto:Edumaths360@gmail.com)
+**Vaibhav Gupta**, founder of Edumaths360, CAT/MBA teacher (QA, DILR/reasoning and VARC), moving into developer relations and technical content. 📧 [Edumaths360@gmail.com](mailto:Edumaths360@gmail.com)
 
 Licensed under the [MIT License](LICENSE).

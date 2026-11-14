@@ -4,8 +4,9 @@ This module is pure Python with no MCP imports, so the maths logic can be
 unit-tested on its own. The MCP layer lives in ``server.py``.
 
 The topics follow what CAT, other MBA entrance tests and similar competitive
-exams ask in their quantitative aptitude (arithmetic, algebra, number system)
-and logical reasoning sections.
+exams ask in their quantitative aptitude (arithmetic, algebra, number system),
+logical reasoning (DILR) and verbal ability (VARC) sections. VARC items come
+from a small bank of original passages in ``varc_bank.py``.
 
 Design notes
 ------------
@@ -28,6 +29,8 @@ from functools import cache
 from math import gcd, lcm, prod
 from typing import Literal, get_args
 
+from edumaths360_mcp.varc_bank import ODD_SENTENCE_OUT, PARA_JUMBLES, PARA_SUMMARY
+
 Topic = Literal[
     "percentages",
     "profit_loss",
@@ -39,9 +42,12 @@ Topic = Literal[
     "quadratics",
     "number_system",
     "number_series",
+    "para_jumbles",
+    "odd_sentence_out",
+    "para_summary",
 ]
 Difficulty = Literal["easy", "medium", "hard"]
-Section = Literal["quant", "reasoning"]
+Section = Literal["quant", "reasoning", "varc"]
 
 TOPICS: tuple[str, ...] = get_args(Topic)
 DIFFICULTIES: tuple[str, ...] = get_args(Difficulty)
@@ -58,6 +64,9 @@ TOPIC_CODES: dict[str, str] = {
     "quadratics": "quad",
     "number_system": "num",
     "number_series": "series",
+    "para_jumbles": "pj",
+    "odd_sentence_out": "odd",
+    "para_summary": "sum",
 }
 CODE_TOPICS: dict[str, str] = {code: topic for topic, code in TOPIC_CODES.items()}
 
@@ -73,6 +82,9 @@ TOPIC_SECTIONS: dict[str, str] = {
     "quadratics": "quant",
     "number_system": "quant",
     "number_series": "reasoning",
+    "para_jumbles": "varc",
+    "odd_sentence_out": "varc",
+    "para_summary": "varc",
 }
 TOPIC_AREAS: dict[str, str] = {
     "percentages": "arithmetic",
@@ -85,6 +97,9 @@ TOPIC_AREAS: dict[str, str] = {
     "quadratics": "algebra",
     "number_system": "number system",
     "number_series": "logical reasoning",
+    "para_jumbles": "verbal ability",
+    "odd_sentence_out": "verbal ability",
+    "para_summary": "verbal ability",
 }
 #: Plain-English names for prose, for example in the tutor prompt.
 TOPIC_LABELS: dict[str, str] = {
@@ -98,10 +113,14 @@ TOPIC_LABELS: dict[str, str] = {
     "quadratics": "quadratic equations",
     "number_system": "number system",
     "number_series": "number series",
+    "para_jumbles": "para jumbles",
+    "odd_sentence_out": "odd sentence out",
+    "para_summary": "para summary",
 }
 SECTION_DESCRIPTIONS: dict[str, str] = {
     "quant": "Quantitative aptitude: arithmetic, algebra and number system.",
-    "reasoning": "Logical reasoning: pattern-based items with one verifiable numeric answer.",
+    "reasoning": "Logical reasoning (DILR): pattern-based items with one verifiable numeric answer.",
+    "varc": "Verbal ability (VARC): para jumbles, odd sentence out and para summary, on original passages.",
 }
 TOPIC_DESCRIPTIONS: dict[str, str] = {
     "percentages": "Percentage of a quantity, successive percentage change, and price-consumption problems.",
@@ -114,12 +133,15 @@ TOPIC_DESCRIPTIONS: dict[str, str] = {
     "quadratics": "Solve quadratic equations by factorisation.",
     "number_system": "HCF and LCM, units digits of powers, and counting factors.",
     "number_series": "Find the next term: arithmetic, geometric, difference and mixed series.",
+    "para_jumbles": "Arrange four or five shuffled sentences into a coherent paragraph (TITA order answer).",
+    "odd_sentence_out": "Find the one sentence out of five that does not belong to the paragraph (TITA).",
+    "para_summary": "Choose the option (A to D) that best summarises a short passage.",
 }
 
 MAX_SEED = 999_999
 MAX_HINT_LEVEL = 3
 
-PROBLEM_ID_PATTERN = r"^(pct|pl|ratio|tsd|work|int|lin|quad|num|series)-(easy|medium|hard)-(\d{1,6})$"
+PROBLEM_ID_PATTERN = r"^(pct|pl|ratio|tsd|work|int|lin|quad|num|series|pj|odd|sum)-(easy|medium|hard)-(\d{1,6})$"
 _PROBLEM_ID_RE = re.compile(PROBLEM_ID_PATTERN)
 _NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?(?:\s*/\s*\d+)?")
 _THOUSANDS_RE = re.compile(r"(?<=\d),(?=\d{2,3}(?!\d))")
@@ -145,8 +167,16 @@ class Problem:
     answer: tuple[Fraction, ...]
     hints: tuple[str, str, str]
     solution: str
-    #: Predictable wrong answers mapped to targeted feedback.
-    mistakes: dict[Fraction, str] = field(default_factory=dict)
+    #: Predictable wrong answers mapped to targeted feedback. Keys are numbers for
+    #: quant and reasoning, and answer keys such as "B" for VARC.
+    mistakes: dict[Fraction | str, str] = field(default_factory=dict)
+    #: "numeric" (quant, reasoning), "order" (para jumbles), "pick" (odd sentence out)
+    #: or "choice" (para summary).
+    kind: str = "numeric"
+    #: VARC answer key: an order such as "2413", a sentence number such as "3", or a letter.
+    key: str = ""
+    #: VARC multiple-choice options, letter -> option text.
+    choices: dict[str, str] = field(default_factory=dict)
 
 
 # --------------------------------------------------------------------------- IDs
@@ -1133,6 +1163,110 @@ def _number_series(rng: random.Random, difficulty: str) -> dict:
     )
 
 
+# ------------------------------------------------------------------------ VARC
+
+_JUMBLE_HINTS = (
+    "Find the opening sentence: it introduces the subject and does not lean on any other sentence.",
+    "Look for linking clues. Pronouns such as 'this', 'they' or 'them' and connectors such as 'therefore', "
+    "'yet' or 'as a result' must come after the sentence they refer to.",
+)
+_ODD_HINTS = (
+    "Work out the single point that most of the sentences develop together.",
+    "The odd sentence may share a keyword or the general subject with the others, but it takes the discussion "
+    "somewhere else. Remove each sentence in turn and see which removal leaves one tight paragraph.",
+)
+_SUMMARY_HINTS = (
+    "Identify the passage's central claim. Examples and details support it, but they are not the main point.",
+    "Eliminate options that capture only one detail or example, options that claim more than the passage does, "
+    "and options that change what the passage says.",
+)
+_SUMMARY_FEEDBACK = {
+    "narrow": "That option is true to the passage but covers only one detail or example, not the main point.",
+    "broad": "That option goes further than the passage: it generalises or recommends more than the author says.",
+    "distort": "That option changes what the passage says. Re-read the passage's key claim.",
+}
+_SUMMARY_LABELS = {"narrow": "covers only one detail", "broad": "goes beyond the passage", "distort": "distorts it"}
+
+
+def _labels(n: int) -> list[str]:
+    return [str(i) for i in range(1, n + 1)]
+
+
+def _para_jumbles(rng: random.Random, difficulty: str) -> dict:
+    item = rng.choice(PARA_JUMBLES[difficulty])
+    sentences = item["sentences"]
+    n = len(sentences)
+    order = list(range(n))
+    while order == sorted(order):  # never show the paragraph already in order
+        rng.shuffle(order)
+    # order[i] is the index (in the correct paragraph) of the sentence shown with label i + 1.
+    key = "".join(str(order.index(k) + 1) for k in range(n))
+    shown = "\n".join(f"{i + 1}. {sentences[order[i]]}" for i in range(n))
+    return dict(
+        kind="order",
+        key=key,
+        statement=(
+            f"The {n} sentences below, labelled 1 to {n}, form a coherent paragraph when arranged in the right "
+            f"order. Enter the correct order as a sequence of sentence numbers.\n\n{shown}"
+        ),
+        answer_format=f"the {n} sentence numbers in order, for example {'-'.join(_labels(n))} or {''.join(_labels(n))}",
+        answer=(),
+        hints=(*_JUMBLE_HINTS, item["structure"]),
+        solution=f"Correct order: {key}. {item['explanation']}",
+        mistakes={},
+    )
+
+
+def _odd_sentence_out(rng: random.Random, difficulty: str) -> dict:
+    item = rng.choice(ODD_SENTENCE_OUT[difficulty])
+    pool = [*item["core"], item["odd"]]
+    rng.shuffle(pool)
+    key = str(pool.index(item["odd"]) + 1)
+    shown = "\n".join(f"{i + 1}. {text}" for i, text in enumerate(pool))
+    return dict(
+        kind="pick",
+        key=key,
+        statement=(
+            "Four of the five sentences below can be arranged into a coherent paragraph. Which sentence does "
+            f"not belong? Enter its number.\n\n{shown}"
+        ),
+        answer_format="one sentence number from 1 to 5, for example 4",
+        answer=(),
+        hints=(*_ODD_HINTS, item["topic"]),
+        solution=f"Sentence {key} is the odd one out: {item['why']}",
+        mistakes={},
+    )
+
+
+def _para_summary(rng: random.Random, difficulty: str) -> dict:
+    item = rng.choice(PARA_SUMMARY[difficulty])
+    options = [("correct", item["correct"]), *item["distractors"]]
+    rng.shuffle(options)
+    letters = "ABCD"
+    choices = {letters[i]: text for i, (_, text) in enumerate(options)}
+    key = next(letters[i] for i, (kind, _) in enumerate(options) if kind == "correct")
+    others = [(letters[i], kind) for i, (kind, _) in enumerate(options) if kind != "correct"]
+    shown = "\n".join(f"{letter}. {text}" for letter, text in choices.items())
+    return dict(
+        kind="choice",
+        key=key,
+        choices=choices,
+        statement=(
+            "Read the passage and choose the option that best captures its essence.\n\n"
+            f"Passage: {item['passage']}\n\n{shown}"
+        ),
+        answer_format="the letter of one option (A, B, C or D), or the option's full text",
+        answer=(),
+        hints=(*_SUMMARY_HINTS, item["structure"]),
+        solution=(
+            f"Option {key} is the best summary: it keeps the passage's main claim and its limits. Of the others, "
+            + "; ".join(f"option {letter} {_SUMMARY_LABELS[kind]}" for letter, kind in others)
+            + "."
+        ),
+        mistakes={letter: _SUMMARY_FEEDBACK[kind] for letter, kind in others},
+    )
+
+
 _GENERATORS = {
     "percentages": _percentages,
     "profit_loss": _profit_loss,
@@ -1144,6 +1278,9 @@ _GENERATORS = {
     "quadratics": _quadratics,
     "number_system": _number_system,
     "number_series": _number_series,
+    "para_jumbles": _para_jumbles,
+    "odd_sentence_out": _odd_sentence_out,
+    "para_summary": _para_summary,
 }
 
 
@@ -1154,7 +1291,7 @@ def generate(topic: str, difficulty: str, seed: int) -> Problem:
     spec = _GENERATORS[topic](rng, difficulty)
     spec.setdefault("answer_format", DEFAULT_FORMAT)
     # A "common mistake" value must never coincide with the real answer.
-    spec["mistakes"] = {k: v for k, v in spec["mistakes"].items() if k not in spec["answer"]}
+    spec["mistakes"] = {k: v for k, v in spec["mistakes"].items() if k not in spec["answer"] and k != spec.get("key")}
     return Problem(
         id=make_problem_id(topic, difficulty, seed),
         topic=topic,
@@ -1202,8 +1339,60 @@ class CheckResult:
     feedback: str
 
 
+_OPTION_RE = re.compile(r"^\W*(?:option\s*|answer\s*(?:is\s*)?)?\(?([a-d])\)?\W*$", re.IGNORECASE)
+
+
+def _normalise(text: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", text.lower()).split())
+
+
+def parse_choice(problem: Problem, answer_text: str) -> str:
+    """Read a letter ('B', '(b)', 'option B') or the pasted text of an option."""
+    match = _OPTION_RE.match(answer_text)
+    if match:
+        return match.group(1).upper()
+    given = _normalise(answer_text)
+    if given:
+        for letter, text in problem.choices.items():
+            option = _normalise(text)
+            if given == option or (len(given) >= 20 and (given in option or option in given)):
+                return letter
+    raise ProblemError(f"I could not match that to an option. Expected format: {problem.answer_format}.")
+
+
+def _check_varc(problem: Problem, answer_text: str) -> CheckResult:
+    if problem.kind == "order":
+        n = len(problem.key)
+        digits = re.findall(r"\d", answer_text)
+        if sorted(digits) != _labels(n):
+            raise ProblemError(
+                f"Give each of the {n} sentence numbers exactly once, in order. "
+                f"Expected format: {problem.answer_format}."
+            )
+        if "".join(digits) == problem.key:
+            return CheckResult(True, "Correct! The paragraph now flows. Notice which link words gave the order away.")
+        return CheckResult(False, "Not quite. Re-check the links between sentences, or ask for a hint.")
+    if problem.kind == "pick":
+        numbers = [int(x) for x in re.findall(r"\d+", answer_text)]
+        if not numbers or not 1 <= numbers[-1] <= 5:
+            raise ProblemError(f"Give one sentence number. Expected format: {problem.answer_format}.")
+        if str(numbers[-1]) == problem.key:
+            return CheckResult(True, "Correct! The other four sentences develop a single point without it.")
+        return CheckResult(
+            False,
+            "Not quite: that sentence fits the paragraph's main point. Look for one that drifts to a related "
+            "but different idea, or ask for a hint.",
+        )
+    letter = parse_choice(problem, answer_text)
+    if letter == problem.key:
+        return CheckResult(True, "Correct! That option keeps the main claim without adding or dropping anything.")
+    return CheckResult(False, problem.mistakes.get(letter, "Not quite. Re-read the passage, or ask for a hint."))
+
+
 def check(problem: Problem, answer_text: str) -> CheckResult:
     """Compare a student's answer with the stored answer. Never reveals the answer."""
+    if problem.kind != "numeric":
+        return _check_varc(problem, answer_text)
     multi = len(problem.answer) > 1
     try:
         values = parse_numbers(answer_text, thousands=not multi)

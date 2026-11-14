@@ -14,6 +14,7 @@ from edumaths360_mcp.problems import (
     check,
     format_fraction,
     generate,
+    parse_choice,
     parse_numbers,
     parse_problem_id,
     problem_from_id,
@@ -21,6 +22,8 @@ from edumaths360_mcp.problems import (
 )
 
 ALL_COMBOS = [(t, d) for t in TOPICS for d in DIFFICULTIES]
+NUMERIC_COMBOS = [(t, d) for t, d in ALL_COMBOS if TOPIC_SECTIONS[t] != "varc"]
+VARC_COMBOS = [(t, d) for t, d in ALL_COMBOS if TOPIC_SECTIONS[t] == "varc"]
 
 
 def _answer_text(problem) -> str:
@@ -40,14 +43,14 @@ def test_id_round_trips(topic, difficulty):
     assert problem.section == TOPIC_SECTIONS[topic]
 
 
-@pytest.mark.parametrize("topic,difficulty", ALL_COMBOS)
+@pytest.mark.parametrize("topic,difficulty", NUMERIC_COMBOS)
 def test_correct_answer_is_accepted(topic, difficulty):
     for seed in range(50):
         problem = generate(topic, difficulty, seed)
         assert check(problem, _answer_text(problem)).correct, problem
 
 
-@pytest.mark.parametrize("topic,difficulty", ALL_COMBOS)
+@pytest.mark.parametrize("topic,difficulty", NUMERIC_COMBOS)
 def test_answers_are_exact_and_tidy(topic, difficulty):
     # Single answers are whole numbers or short decimals such as 37.5, never 16.666...
     for seed in range(50):
@@ -57,7 +60,7 @@ def test_answers_are_exact_and_tidy(topic, difficulty):
                 assert value.denominator in (1, 2, 4, 5, 8), (problem.id, value)
 
 
-@pytest.mark.parametrize("topic,difficulty", ALL_COMBOS)
+@pytest.mark.parametrize("topic,difficulty", NUMERIC_COMBOS)
 def test_hints_never_state_the_final_answer(topic, difficulty):
     for seed in range(100):
         problem = generate(topic, difficulty, seed)
@@ -72,7 +75,7 @@ def test_hints_never_state_the_final_answer(topic, difficulty):
                 )
 
 
-@pytest.mark.parametrize("topic,difficulty", ALL_COMBOS)
+@pytest.mark.parametrize("topic,difficulty", NUMERIC_COMBOS)
 def test_wrong_answer_feedback_never_contains_answer(topic, difficulty):
     for seed in range(25):
         problem = generate(topic, difficulty, seed)
@@ -85,7 +88,7 @@ def test_wrong_answer_feedback_never_contains_answer(topic, difficulty):
             )
 
 
-@pytest.mark.parametrize("topic,difficulty", ALL_COMBOS)
+@pytest.mark.parametrize("topic,difficulty", NUMERIC_COMBOS)
 def test_common_mistakes_never_equal_the_answer(topic, difficulty):
     for seed in range(50):
         problem = generate(topic, difficulty, seed)
@@ -93,9 +96,10 @@ def test_common_mistakes_never_equal_the_answer(topic, difficulty):
 
 
 def test_sections_cover_every_topic():
-    assert set(SECTIONS) == {"quant", "reasoning"}
+    assert set(SECTIONS) == {"quant", "reasoning", "varc"}
     assert sorted(t for s in SECTIONS for t in topics_in_section(s)) == sorted(TOPICS)
     assert topics_in_section("reasoning") == ["number_series"]
+    assert topics_in_section("varc") == ["para_jumbles", "odd_sentence_out", "para_summary"]
 
 
 def test_profit_loss_answer_formats():
@@ -194,3 +198,119 @@ def test_solution_steps_are_not_repeated(seed):
     for topic, difficulty in ALL_COMBOS:
         steps = [s.strip() for s in generate(topic, difficulty, seed).solution.split("→")]
         assert len(steps) == len(set(steps)), steps
+
+
+# --------------------------------------------------------------------- VARC
+
+
+def _shingles(text: str, n: int = 5) -> set[str]:
+    words = re.findall(r"[a-z']+", text.lower())
+    return {" ".join(words[i : i + n]) for i in range(len(words) - n + 1)}
+
+
+def _correct_text(problem) -> str:
+    """The text a hint must never quote: the odd sentence or the correct option."""
+    if problem.kind == "choice":
+        return problem.choices[problem.key]
+    if problem.kind == "pick":
+        return re.search(rf"^{problem.key}\. (.*)$", problem.statement, re.MULTILINE).group(1)
+    return ""
+
+
+def test_varc_bank_has_enough_original_items():
+    from edumaths360_mcp.varc_bank import ODD_SENTENCE_OUT, PARA_JUMBLES, PARA_SUMMARY
+
+    for bank in (PARA_JUMBLES, ODD_SENTENCE_OUT, PARA_SUMMARY):
+        assert set(bank) == set(DIFFICULTIES)
+        assert sum(len(items) for items in bank.values()) >= 8
+    texts = [s for items in PARA_JUMBLES.values() for item in items for s in item["sentences"]]
+    assert len(texts) == len(set(texts))  # no sentence reused
+
+
+@pytest.mark.parametrize("topic,difficulty", VARC_COMBOS)
+def test_varc_correct_key_is_accepted(topic, difficulty):
+    for seed in range(60):
+        problem = generate(topic, difficulty, seed)
+        assert problem.section == "varc" and problem.key
+        assert check(problem, problem.key).correct, problem.id
+        if problem.kind == "order":
+            assert problem.key != "".join(sorted(problem.key))  # never shown already in order
+            assert check(problem, "-".join(problem.key)).correct
+            assert check(problem, " ".join(problem.key)).correct
+        if problem.kind == "pick":
+            assert check(problem, f"Sentence {problem.key}").correct
+        if problem.kind == "choice":
+            assert check(problem, f"({problem.key.lower()})").correct
+            assert check(problem, f"Option {problem.key}").correct
+            assert check(problem, problem.choices[problem.key]).correct
+            assert check(problem, problem.choices[problem.key].upper().rstrip(".")).correct
+
+
+@pytest.mark.parametrize("topic,difficulty", VARC_COMBOS)
+def test_varc_wrong_answers_are_rejected_without_leaking(topic, difficulty):
+    for seed in range(60):
+        problem = generate(topic, difficulty, seed)
+        if problem.kind == "order":
+            wrong = ["".join(sorted(problem.key)), problem.key[::-1]]
+        elif problem.kind == "pick":
+            wrong = [str(i) for i in range(1, 6) if str(i) != problem.key]
+        else:
+            wrong = [letter for letter in "ABCD" if letter != problem.key]
+        for answer in wrong:
+            if answer == problem.key:
+                continue
+            result = check(problem, answer)
+            assert not result.correct
+            assert problem.key not in re.findall(r"[A-D1-9]+", result.feedback), (problem.id, result.feedback)
+            assert not _shingles(_correct_text(problem)) & _shingles(result.feedback)
+
+
+@pytest.mark.parametrize("topic,difficulty", VARC_COMBOS)
+def test_varc_hints_never_reveal_or_narrow_to_the_answer(topic, difficulty):
+    for seed in range(100):
+        problem = generate(topic, difficulty, seed)
+        assert len(problem.hints) == 3
+        for hint in problem.hints:
+            # No sentence numbers or option letters at all, so a hint cannot point at a label...
+            assert not re.search(r"\d", hint), (problem.id, hint)
+            assert not re.search(r"\b(option|sentence)\s+[A-D1-9]\b|\([A-Da-d]\)", hint, re.IGNORECASE)
+            # ...and no quoting of the odd sentence or the correct option.
+            assert not _shingles(_correct_text(problem)) & _shingles(hint), (problem.id, hint)
+
+
+def test_varc_selection_is_repeatable_and_varied():
+    assert generate("para_jumbles", "hard", 5) == generate("para_jumbles", "hard", 5)
+    keys = {generate("odd_sentence_out", "easy", seed).key for seed in range(40)}
+    assert len(keys) >= 4  # the odd sentence moves around
+    statements = {generate("para_summary", "medium", seed).statement for seed in range(40)}
+    assert len(statements) >= 6
+
+
+def test_para_summary_distractor_feedback():
+    problem = generate("para_summary", "medium", 42)  # museums passage, key B
+    assert problem.key == "B"
+    assert "only one detail" in check(problem, "A").feedback
+    assert "further than the passage" in check(problem, "c").feedback
+    assert "changes what the passage says" in check(problem, "option D").feedback
+
+
+@pytest.mark.parametrize(
+    "topic,answer,message",
+    [
+        ("para_jumbles", "123", "exactly once"),
+        ("para_jumbles", "1124", "exactly once"),
+        ("odd_sentence_out", "seven", "sentence number"),
+        ("odd_sentence_out", "9", "sentence number"),
+        ("para_summary", "E", "could not match"),
+        ("para_summary", "something about ports", "could not match"),
+    ],
+)
+def test_varc_unreadable_answers(topic, answer, message):
+    with pytest.raises(ProblemError, match=message):
+        check(generate(topic, "easy", 3), answer)
+
+
+def test_parse_choice_formats():
+    problem = generate("para_summary", "hard", 1)
+    for text in ["B", "b", "(B)", "B)", "option b", "Answer is B"]:
+        assert parse_choice(problem, text) == "B"

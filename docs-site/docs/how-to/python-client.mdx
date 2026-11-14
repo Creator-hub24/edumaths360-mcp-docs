@@ -45,7 +45,7 @@ python snippets/client.py
 ### Expected output
 
 ```text
-Connected to Edumaths360 Practice Server v0.2.0 (protocol 2026-07-28)
+Connected to Edumaths360 Practice Server v0.3.0 (protocol 2026-07-28)
 
 Tools: generate_problem, check_answer, get_hint
 
@@ -81,16 +81,16 @@ Every `call_tool` result has:
 ### Two kinds of error
 
 1. **Tool errors** come back as a normal result with `is_error=True`, as in step 5 of the client. Bad arguments and answers the server cannot read work this way, so a model can read the message and correct itself.
-2. **Protocol errors** raise an `MCPError` exception in the client. For example, reading `syllabus://section/varc` fails with JSON-RPC error code `-32602`. See the [error reference](../reference/tools.md#errors).
+2. **Protocol errors** raise an `MCPError` exception in the client. For example, reading `syllabus://section/gk` fails with JSON-RPC error code `-32602`. See the [error reference](../reference/tools.md#errors).
 
 ```python
 from mcp import MCPError
 
 try:
-    await client.read_resource("syllabus://section/varc")
+    await client.read_resource("syllabus://section/gk")
 except MCPError as exc:
     print(exc.error.code, exc.error.message)
-    # -32602 No syllabus for section 'varc'. Use one of: quant, reasoning.
+    # -32602 No syllabus for section 'gk'. Use one of: quant, reasoning, varc.
 ```
 
 ### Testing in-process

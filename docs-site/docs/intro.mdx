@@ -8,7 +8,7 @@ import VideoPlaceholder from '@site/src/components/VideoPlaceholder';
 
 # Introduction
 
-The **Edumaths360 Practice Server** is a small, working [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server. It lets an AI assistant, such as Claude Desktop or Cursor, run quantitative aptitude (quant) and logical reasoning practice for CAT, other MBA entrance tests and similar competitive exams.
+The **Edumaths360 Practice Server** is a small, working [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server. It lets an AI assistant, such as Claude Desktop or Cursor, run practice in all three CAT sections, quantitative aptitude (QA), logical reasoning (DILR) and verbal ability (VARC), for CAT, other MBA entrance tests and similar competitive exams.
 
 The key design rule is simple: **the assistant should help the aspirant think, not think for them.** In an exam hall there is no chatbot, so practice has to build the student's own method and speed. The server creates problems, marks answers, and gives step-by-step hints, but it never hands over the answer early.
 
@@ -26,7 +26,7 @@ MCP is an open standard that lets an AI application (the *host*) discover and ca
 | Tool | [`check_answer`](./reference/tools.md#check_answer) | Marks an attempt and gives targeted feedback, for example "the gain % is worked out on the cost price". |
 | Tool | [`get_hint`](./reference/tools.md#get_hint) | Gives a hint at level 1, 2 or 3. Hints never state the final answer. |
 | Resource | [`syllabus://topics`](./reference/resources-and-prompts.md#syllabustopics) | Lists every topic with its exam section and area. |
-| Resource template | [`syllabus://section/{section}`](./reference/resources-and-prompts.md#syllabussectionsection) | Lists the topics in one section: `quant` or `reasoning`. |
+| Resource template | [`syllabus://section/{section}`](./reference/resources-and-prompts.md#syllabussectionsection) | Lists the topics in one section: `quant`, `reasoning` or `varc`. |
 | Prompt | [`socratic_tutor`](./reference/resources-and-prompts.md#socratic_tutor) | A ready-made tutoring session that asks guiding questions. |
 
 Topics, each at easy, medium and hard difficulty:
@@ -37,6 +37,7 @@ Topics, each at easy, medium and hard difficulty:
 | Quant | Algebra | linear equations, quadratic equations |
 | Quant | Number system | HCF and LCM, units digits, counting factors |
 | Reasoning | Logical reasoning | number series |
+| VARC | Verbal ability | para jumbles, odd sentence out, para summary (original passages written for this project) |
 
 ## Who these docs are for
 

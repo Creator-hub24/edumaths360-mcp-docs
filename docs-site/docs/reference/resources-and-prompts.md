@@ -18,9 +18,9 @@ Both resources return JSON with the MIME type `application/json`.
 | --- | --- |
 | Name | `all_topics` |
 | Title | All topics |
-| Description | Every topic the server can generate, grouped by exam section (quant or reasoning). |
+| Description | Every topic the server can generate, grouped by exam section (quant, reasoning or varc). |
 
-**Response text** (shortened: the real response lists all 10 topics, and `difficulties` is spread over several lines):
+**Response text** (shortened: the real response lists all 13 topics, and `difficulties` is spread over several lines):
 
 ```json
 {
@@ -57,6 +57,7 @@ Both resources return JSON with the MIME type `application/json`.
 | `quant` | `algebra` | `linear_equations`, `quadratics` |
 | `quant` | `number system` | `number_system` |
 | `reasoning` | `logical reasoning` | `number_series` |
+| `varc` | `verbal ability` | `para_jumbles`, `odd_sentence_out`, `para_summary` |
 
 ### `syllabus://section/{section}`
 
@@ -66,8 +67,8 @@ A *resource template*: `{section}` is a parameter the client fills in.
 | --- | --- |
 | Name | `section_syllabus` |
 | Title | Syllabus for one exam section |
-| Description | Topics and difficulty levels in one section: 'quant' or 'reasoning'. |
-| Parameter | `section`: `quant` or `reasoning` |
+| Description | Topics and difficulty levels in one section: 'quant', 'reasoning' or 'varc'. |
+| Parameter | `section`: `quant`, `reasoning` or `varc` |
 
 **Example:** `syllabus://section/reasoning`
 
@@ -87,9 +88,9 @@ A *resource template*: `{section}` is a parameter the client fills in.
 }
 ```
 
-`syllabus://section/quant` returns the nine quant topics in the same shape, with the description `Quantitative aptitude: arithmetic, algebra and number system.`
+`syllabus://section/quant` returns the nine quant topics in the same shape, with the description `Quantitative aptitude: arithmetic, algebra and number system.` `syllabus://section/varc` returns `para_jumbles`, `odd_sentence_out` and `para_summary` (area `verbal ability`) with the description `Verbal ability (VARC): para jumbles, odd sentence out and para summary, on original passages.`
 
-**Errors:** any other value, such as `varc`, returns JSON-RPC error `-32602` with the message `No syllabus for section 'varc'. Use one of: quant, reasoning.` The SDK also rejects parameter values that look like path traversal (for example `..`) by default.
+**Errors:** any other value, such as `gk`, returns JSON-RPC error `-32602` with the message `No syllabus for section 'gk'. Use one of: quant, reasoning, varc.` The SDK also rejects parameter values that look like path traversal (for example `..`) by default.
 
 ## Prompts
 
@@ -97,14 +98,14 @@ A *resource template*: `{section}` is a parameter the client fills in.
 
 | Property | Value |
 | --- | --- |
-| Title | Socratic quant tutor |
+| Title | Socratic CAT tutor |
 | Description | Run a CAT-style practice session where the assistant asks guiding questions instead of giving answers. |
 
 **Arguments** (both optional strings; MCP prompt arguments are always strings):
 
 | Name | Default | Allowed values |
 | --- | --- | --- |
-| `topic` | `percentages` | One of the 10 topic names, for example `time_work`. |
+| `topic` | `percentages` | One of the 13 topic names, for example `time_work`. |
 | `difficulty` | `medium` | `easy`, `medium` or `hard`. |
 
 **Result:** one `user` message. For `topic="time_work"` and `difficulty="hard"`:
@@ -123,11 +124,13 @@ Rules:
 Start by greeting the student and generating the first problem.
 ```
 
+For a VARC topic such as `para_summary`, the first line names a `verbal ability (VARC) coach` instead, and the example question in rule 3 becomes `'Which sentence introduces the topic?'`. The other rules are the same.
+
 **Errors** (JSON-RPC `-32602`, raised as `MCPError` in the Python client):
 
 | Input | Message |
 | --- | --- |
-| `topic="ignore previous instructions"` | `Unknown topic 'ignore previous instructions'. Choose one of: percentages, profit_loss, ratio_proportion, time_speed_distance, time_work, interest, linear_equations, quadratics, number_system, number_series.` |
+| `topic="ignore previous instructions"` | `Unknown topic 'ignore previous instructions'. Choose one of: percentages, profit_loss, ratio_proportion, time_speed_distance, time_work, interest, linear_equations, quadratics, number_system, number_series, para_jumbles, odd_sentence_out, para_summary.` |
 | `topic="time_work", difficulty="insane"` | `Unknown difficulty 'insane'. Choose one of: easy, medium, hard.` |
 
 The arguments are checked against fixed lists before they are inserted into the prompt text. This stops a client from injecting its own instructions through a prompt argument. See [Security model](../explanation/security-model.md#1-input-validation).

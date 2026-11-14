@@ -20,7 +20,8 @@ These messages were captured from the running server by [`snippets/capture_paylo
 - A **request** has an `id`, a `method` and usually `params`. The response carries the same `id`.
 - A **notification** has no `id` and gets no response.
 - A response has **either** a `result` **or** an `error`, never both.
-- A tool failure is a `result` with `"isError": true` (example 8). A protocol failure is an `error` (examples 14 and 15).
+- A tool failure is a `result` with `"isError": true` (example 8). A protocol failure is an `error` (examples 16 and 17).
+- Examples 9 and 10 show a VARC item: a para summary question, and a wrong option that gets feedback naming the kind of trap (a narrow distractor) without revealing the right letter.
 
 The capture script uses the `initialize` handshake with protocol version `2025-11-25`, which is what most hosts send today. The MCP Python SDK 2.x client negotiates the newer `2026-07-28` version automatically, but the tool, resource and prompt messages look the same.
 
@@ -34,6 +35,6 @@ The **Python SDK** tab shows the equivalent call with the SDK client from [Conne
 
 | Code | Meaning | Example |
 | --- | --- | --- |
-| `-32601` | Method not found | Example 15 |
-| `-32602` | Invalid params: unknown resource, or invalid prompt arguments | Example 14 |
+| `-32601` | Method not found | Example 17 |
+| `-32602` | Invalid params: unknown resource, or invalid prompt arguments | Example 16 |
 | `isError: true` | Not a JSON-RPC error: the tool ran and reported a problem | Example 8 |

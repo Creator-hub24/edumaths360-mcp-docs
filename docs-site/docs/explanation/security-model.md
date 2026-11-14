@@ -19,7 +19,7 @@ The Edumaths360 server is small and low-risk by design. It follows four rules.
 | `topic`, `difficulty` | Must be one of a fixed list (`Literal` types, so they appear as `enum` in the JSON Schema). | `server.py`, `problems.py` |
 | `seed` | Whole number from 0 to 999,999. | Schema |
 | `problem_id` | At most 32 characters, and must match a strict regular expression. | Schema and `parse_problem_id()` |
-| `answer` | 1 to 100 characters. Parsed as a number or fraction, never evaluated as code. | Schema and `problems.py` |
+| `answer` | 1 to 300 characters. Parsed as a number, fraction, sentence order, option letter or option text, never evaluated as code. | Schema and `problems.py` |
 | Prompt `topic`, `difficulty` | Checked against the topic and difficulty lists *before* they are inserted into the prompt text. | `socratic_tutor()` |
 
 Two points deserve explanation:
